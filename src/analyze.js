@@ -25,6 +25,7 @@ export function analyze(data) {
     recovery: recoveryAnalysis,
     nutrition: nutritionAnalysis,
     signals: generateSignals(sleepAnalysis, activityAnalysis, recoveryAnalysis, nutritionAnalysis),
+    recommendations: generateRecommendations(sleepAnalysis, activityAnalysis, recoveryAnalysis, nutritionAnalysis),
   };
 }
 
@@ -399,4 +400,148 @@ function trendDirection(values) {
 function round(v, decimals = 0) {
   const f = 10 ** decimals;
   return Math.round(v * f) / f;
+}
+
+// ─── Recommendations (time-aware) ───
+
+function generateRecommendations(sleep, activity, recovery, nutrition) {
+  const now = new Date();
+  const hour = now.getHours();
+  const recs = [];
+
+  // ── Morning (5-10): Day planning based on recovery ──
+  if (hour >= 5 && hour < 10) {
+    if (recovery.available && recovery.readiness === "good") {
+      recs.push({
+        type: "morning_push",
+        timing: "morning",
+        priority: "high",
+        title: "High recovery — prioritize deep work",
+        detail: `Recovery score ${recovery.recoveryScore}/100 and HRV ${recovery.latestHRV}ms. Your body is ready. Use this morning for your hardest cognitive or physical work.`,
+      });
+    } else if (recovery.available && recovery.readiness === "low") {
+      recs.push({
+        type: "morning_rest",
+        timing: "morning",
+        priority: "high",
+        title: "Low recovery — lighter day recommended",
+        detail: `Recovery score ${recovery.recoveryScore}/100. Consider skipping intense training, focusing on maintenance tasks, and getting to bed early tonight.`,
+      });
+    }
+
+    // Sleep debt warning
+    if (sleep.available && sleep.averages && sleep.averages.durationMinutes < 390) {
+      recs.push({
+        type: "sleep_debt",
+        timing: "morning",
+        priority: "high",
+        title: "Accumulated sleep debt detected",
+        detail: `Averaging ${(sleep.averages.durationMinutes / 60).toFixed(1)}h — below 6.5h target minimum. Cognitive performance and self-control are likely impaired. Consider a recovery day with early bedtime.`,
+      });
+    }
+  }
+
+  // ── Midday (10-14): Activity + nutrition nudges ──
+  if (hour >= 10 && hour < 14) {
+    if (activity.available && activity.lastDay && activity.lastDay.steps < 3000) {
+      recs.push({
+        type: "midday_movement",
+        timing: "midday",
+        priority: "medium",
+        title: "Low movement so far — take a walk",
+        detail: `Only ${activity.lastDay.steps.toLocaleString()} steps today. A short walk now improves focus and energy for the afternoon.`,
+      });
+    }
+  }
+
+  // ── Afternoon (14-17): Drift risk + movement ──
+  if (hour >= 14 && hour < 17) {
+    if (recovery.available && recovery.readiness !== "good") {
+      recs.push({
+        type: "afternoon_protect",
+        timing: "afternoon",
+        priority: "medium",
+        title: "Afternoon energy dip likely",
+        detail: `Recovery is ${recovery.readiness}. Common drift window — try a walking break, avoid sugar/caffeine crash, or switch to lighter tasks.`,
+      });
+    }
+  }
+
+  // ── Evening (17-21): Bedtime preparation ──
+  if (hour >= 17 && hour < 21 && sleep.available && sleep.averages) {
+    const avgBedtime = sleep.averages.bedtimeHour;
+    const normalizedBedtime = avgBedtime >= 24 ? avgBedtime - 24 : avgBedtime;
+    const hoursUntilBed = normalizedBedtime - hour + (normalizedBedtime < hour ? 24 : 0);
+
+    if (hoursUntilBed <= 2 && hoursUntilBed > 0) {
+      recs.push({
+        type: "bedtime_approaching",
+        timing: "evening",
+        priority: "high",
+        title: "Bedtime in ~" + Math.round(hoursUntilBed) + "h",
+        detail: `Your average bedtime is ${formatHourSimple(avgBedtime)}. Start winding down — dim lights, avoid screens, no heavy meals or caffeine.`,
+      });
+    }
+
+    // Bedtime consistency nudge
+    if (sleep.averages.bedtimeVariability > 1.0) {
+      recs.push({
+        type: "bedtime_consistency",
+        timing: "evening",
+        priority: "medium",
+        title: "Inconsistent bedtime pattern",
+        detail: `Your bedtime varies by ±${(sleep.averages.bedtimeVariability * 60).toFixed(0)} minutes. Consistent sleep/wake times improve deep sleep and circadian alignment.`,
+      });
+    }
+  }
+
+  // ── Night (21-5): Wind down / recovery ──
+  if (hour >= 21 || hour < 5) {
+    if (sleep.available && sleep.lastNight && sleep.lastNight.deepMinutes < 30) {
+      recs.push({
+        type: "deep_sleep_priority",
+        timing: "night",
+        priority: "medium",
+        title: "Protect deep sleep tonight",
+        detail: `Last night's deep sleep was only ${sleep.lastNight.deepMinutes}m. Cool room (65-68°F), no alcohol, no late heavy meals.`,
+      });
+    }
+  }
+
+  // ── Anytime: Training guidance based on recovery ──
+  if (recovery.available) {
+    if (recovery.readiness === "good" && recovery.trend === "improving") {
+      recs.push({
+        type: "training_green",
+        timing: "anytime",
+        priority: "low",
+        title: "Recovery trending up — good stretch to push",
+        detail: `HRV trending upward (${recovery.trend}) with current score ${recovery.recoveryScore}/100. Your body is adapting well — safe to increase training load.`,
+      });
+    } else if (recovery.readiness === "low" && recovery.trend === "declining") {
+      recs.push({
+        type: "training_red",
+        timing: "anytime",
+        priority: "high",
+        title: "Recovery declining — rest day recommended",
+        detail: `HRV trending down with recovery at ${recovery.recoveryScore}/100. Pushing through this increases injury and illness risk. Take a rest day.`,
+      });
+    }
+  }
+
+  // Sort by priority
+  const PRIORITY_ORDER = { high: 0, medium: 1, low: 2 };
+  recs.sort((a, b) => (PRIORITY_ORDER[a.priority] ?? 2) - (PRIORITY_ORDER[b.priority] ?? 2));
+
+  return recs;
+}
+
+function formatHourSimple(h) {
+  if (isNaN(h)) return "--:--";
+  const norm = h >= 24 ? h - 24 : h;
+  const hrs = Math.floor(norm);
+  const mins = Math.round((norm - hrs) * 60);
+  const period = hrs >= 12 ? "PM" : "AM";
+  const display = hrs > 12 ? hrs - 12 : hrs || 12;
+  return `${display}:${mins.toString().padStart(2, "0")} ${period}`;
 }

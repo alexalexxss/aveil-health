@@ -115,6 +115,22 @@ export function formatReport(report) {
     }
   }
 
+  // Recommendations
+  if (report.recommendations && report.recommendations.length) {
+    lines.push(sectionHeader("RECOMMENDATIONS"));
+    const PRIO_STYLE = {
+      high: { icon: "🔴", color: COLORS.red },
+      medium: { icon: "🟡", color: COLORS.yellow },
+      low: { icon: "🟢", color: COLORS.green },
+    };
+    for (const r of report.recommendations) {
+      const style = PRIO_STYLE[r.priority] || PRIO_STYLE.medium;
+      lines.push(`  ${style.icon} ${style.color}${COLORS.bold}${r.title}${COLORS.reset}`);
+      lines.push(`     ${COLORS.dim}${r.detail}${COLORS.reset}`);
+      lines.push("");
+    }
+  }
+
   // Footer
   lines.push(`${COLORS.dim}  ─────────────────────────────────────${COLORS.reset}`);
   lines.push(`${COLORS.dim}  ${report.recordCount.toLocaleString()} records analyzed · export ${report.exportDate || "unknown"}${COLORS.reset}`);

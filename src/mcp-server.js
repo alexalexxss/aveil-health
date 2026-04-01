@@ -34,7 +34,7 @@ const MCP_PROTOCOL_VERSION = "2024-11-05";
 
 const SERVER_INFO = {
   name: "aveil-health",
-  version: "0.1.0",
+  version: "0.2.0",
 };
 
 const SERVER_CAPABILITIES = {
@@ -108,6 +108,21 @@ const TOOLS = [
     name: "get_signals",
     description:
       "Get actionable health signals — specific observations with severity levels (positive/neutral/warning) and concrete next steps. This is the most useful tool for quick decisions.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        days: {
+          type: "number",
+          description: "Number of recent days to analyze (default: 30)",
+          default: 30,
+        },
+      },
+    },
+  },
+  {
+    name: "get_recommendations",
+    description:
+      "Get time-aware recommendations based on current time of day, recovery status, and sleep patterns. Includes training guidance, bedtime reminders, energy management tips, and focus suggestions. Best called periodically throughout the day.",
     inputSchema: {
       type: "object",
       properties: {
@@ -202,6 +217,16 @@ async function handleTool(name, args, exportPath) {
             {
               type: "text",
               text: formatSignalsSection(report.signals),
+            },
+          ],
+        };
+
+      case "get_recommendations":
+        return {
+          content: [
+            {
+              type: "text",
+              text: formatRecommendationsSection(report.recommendations),
             },
           ],
         };
@@ -312,6 +337,25 @@ function formatSignalsSection(signals) {
     for (const m of s.moves || []) {
       lines.push(`  → ${m}`);
     }
+    lines.push("");
+  }
+
+  return lines.join("\n");
+}
+
+function formatRecommendationsSection(recs) {
+  if (!recs || !recs.length) {
+    return "### Recommendations\nNo time-specific recommendations right now. Check back later.";
+  }
+
+  const PRIORITY_ICONS = { high: "🔴", medium: "🟡", low: "🟢" };
+  const lines = ["### Recommendations"];
+  lines.push(`*Based on current time and your health data*\n`);
+
+  for (const r of recs) {
+    const icon = PRIORITY_ICONS[r.priority] || "💡";
+    lines.push(`${icon} **${r.title}**`);
+    lines.push(`  ${r.detail}`);
     lines.push("");
   }
 

@@ -147,6 +147,14 @@ Add to your MCP config (e.g. `~/.claude/settings.json` or Cursor MCP settings):
 }
 ```
 
+### Compatible Clients
+
+- **Claude Code** — Anthropic's CLI
+- **Cursor** — AI code editor
+- **Codex** — OpenAI's coding agent
+- **OpenClaw** — via mcporter
+- **Windsurf / Cline / VS Code Copilot** — any MCP-compatible client
+
 ### Available Tools
 
 | Tool | What it does |
@@ -156,6 +164,7 @@ Add to your MCP config (e.g. `~/.claude/settings.json` or Cursor MCP settings):
 | `get_recovery_status` | HRV-based readiness — should you push or rest today? |
 | `get_activity_summary` | Steps, energy, workouts, trends |
 | `get_signals` | Actionable observations with severity + next steps |
+| `get_recommendations` | Time-aware suggestions — bedtime reminders, training guidance, focus tips |
 
 ### Example Prompts
 
@@ -165,6 +174,8 @@ Once configured, ask your AI coding tool:
 - "Am I recovered enough to train hard today?"
 - "Give me a health check"
 - "What should I focus on to improve my sleep?"
+- "Any health recommendations right now?"
+- "Should I work out today or rest?"
 
 All analysis runs locally on your machine. No data is sent anywhere.
 
