@@ -13,9 +13,20 @@
   "keywords": ["health", "apple-health", "mcp", "sleep", "recovery", "hrv", "cli"],
   "author": "Alex Molina",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/alexalexxss/aveil-health"
+  },
+  "homepage": "https://aveilx.com",
   "engines": {
     "node": ">=18"
   },
+  "files": [
+    "bin/",
+    "src/",
+    "README.md",
+    "LICENSE"
+  ],
   "dependencies": {
     "sax": "^1.4.1"
   }
