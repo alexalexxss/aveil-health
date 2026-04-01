@@ -8,6 +8,7 @@
 import { parseHealthExport } from "../src/parser.js";
 import { analyze } from "../src/analyze.js";
 import { formatReport, formatJSON } from "../src/format.js";
+import { startMcpServer } from "../src/mcp-server.js";
 import { existsSync } from "node:fs";
 import { resolve, extname } from "node:path";
 import { execSync } from "node:child_process";
@@ -20,6 +21,7 @@ function printUsage() {
 
   Usage:
     aveil-health analyze <export.xml|export.zip>  [options]
+    aveil-health mcp                               Start MCP server (stdio)
 
   Options:
     --days <n>    Number of recent days to analyze (default: 30)
@@ -30,6 +32,10 @@ function printUsage() {
     aveil-health analyze ~/Desktop/export.xml
     aveil-health analyze export.zip --days 14
     aveil-health analyze export.xml --json > report.json
+
+  MCP Server:
+    Set AVEIL_HEALTH_EXPORT=/path/to/export.xml then:
+    aveil-health mcp
 
   Your data never leaves your machine.
   https://aveilx.com
@@ -43,8 +49,14 @@ async function main() {
   }
 
   const command = args[0];
+
+  if (command === "mcp") {
+    await startMcpServer();
+    return;
+  }
+
   if (command !== "analyze") {
-    console.error(`Unknown command: ${command}. Use "analyze".`);
+    console.error(`Unknown command: ${command}. Use "analyze" or "mcp".`);
     printUsage();
     process.exit(1);
   }

@@ -125,13 +125,56 @@ Each signal includes a severity level (`positive` / `neutral` / `warning`) and c
 - Node.js 18+
 - An Apple Health export (iPhone required for export; Apple Watch recommended for full data)
 
+## MCP Server
+
+Use aveil-health as an MCP server inside Claude Code, Cursor, or any MCP-compatible tool.
+
+### Setup
+
+Add to your MCP config (e.g. `~/.claude/settings.json` or Cursor MCP settings):
+
+```json
+{
+  "mcpServers": {
+    "aveil-health": {
+      "command": "npx",
+      "args": ["aveil-health", "mcp"],
+      "env": {
+        "AVEIL_HEALTH_EXPORT": "/path/to/your/export.xml"
+      }
+    }
+  }
+}
+```
+
+### Available Tools
+
+| Tool | What it does |
+|------|--------------|
+| `analyze_health` | Full health analysis — overall score, all domains, signals |
+| `get_sleep_summary` | Last night + averages + stages + bedtime consistency |
+| `get_recovery_status` | HRV-based readiness — should you push or rest today? |
+| `get_activity_summary` | Steps, energy, workouts, trends |
+| `get_signals` | Actionable observations with severity + next steps |
+
+### Example Prompts
+
+Once configured, ask your AI coding tool:
+
+- "How did I sleep last night?"
+- "Am I recovered enough to train hard today?"
+- "Give me a health check"
+- "What should I focus on to improve my sleep?"
+
+All analysis runs locally on your machine. No data is sent anywhere.
+
 ## Roadmap
 
-- [ ] MCP server for Claude Code / Cursor / AI coding tools
 - [ ] Trend visualizations (terminal sparklines)
 - [ ] Weekly digest mode
 - [ ] Custom signal thresholds
 - [ ] Garmin / Fitbit / Google Health export support
+- [ ] Watch for file changes (auto-refresh on new exports)
 
 ## License
 
