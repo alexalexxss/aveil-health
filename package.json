@@ -1,0 +1,22 @@
+{
+  "name": "aveil-health",
+  "version": "0.1.0",
+  "description": "Private, local Apple Health analysis — CLI + MCP server",
+  "type": "module",
+  "bin": {
+    "aveil-health": "./bin/cli.js"
+  },
+  "main": "./src/index.js",
+  "scripts": {
+    "test": "node --test src/**/*.test.js"
+  },
+  "keywords": ["health", "apple-health", "mcp", "sleep", "recovery", "hrv", "cli"],
+  "author": "Alex Molina",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "sax": "^1.4.1"
+  }
+}
