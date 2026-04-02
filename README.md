@@ -1,18 +1,18 @@
 # aveil-health
 
-Your Apple Health data, analyzed locally. No accounts, no cloud, no BS.
+Your Apple Health data, analyzed locally via CLI.
 
-One command turns your Apple Health export into a clear report — sleep stages, recovery readiness, activity trends, nutrition signals. Everything runs on your machine. Nothing leaves it.
+One command to turn your data into a clear report — sleep stages, recovery readiness, activity trends, and nutrition signals (if you track food). Everything runs on your machine. Nothing leaves it.
 
 ## Health Wrapped
 
-Generate a shareable health card (think Spotify Wrapped, but for your body):
+Generate a shareable card (think Spotify Wrapped, but for your health):
 
 ```bash
 npx aveil-health wrapped export.zip
 ```
 
-Opens a dark-mode card in your browser with your score, health identity, stats, and signals. Screenshot it, share it, flex on your friends.
+Opens a dark-mode card in your browser with your score, health identity, stats, and signals.
 
 ## Get Started
 
@@ -106,15 +106,7 @@ Each signal has a severity (`positive` / `neutral` / `warning`) and a specific a
 
 ## MCP Server
 
-Plug your health data into any AI coding tool:
-
-```bash
-# Set your export path, then connect
-export AVEIL_HEALTH_EXPORT="/path/to/export.xml"
-npx aveil-health mcp
-```
-
-Add to your MCP config (Claude Code, Cursor, Codex, etc.):
+Give your AI agent a health context. Add to your MCP config (Claude Code, OpenClaw, Codex, etc.):
 
 ```json
 {
@@ -130,7 +122,7 @@ Add to your MCP config (Claude Code, Cursor, Codex, etc.):
 }
 ```
 
-Then just ask your agent:
+Then just ask:
 
 - *"How did I sleep last night?"*
 - *"Am I recovered enough to train hard today?"*
@@ -145,7 +137,7 @@ Works with Claude Code, Cursor, Codex, OpenClaw, Windsurf, Cline — anything th
 - **100% local** — parsed and analyzed on your machine
 - **Zero network calls** — no APIs, no telemetry, no tracking
 - **No account** — just your export file
-- **Open source** — read the code
+- **Open source** — verify every line, fork it, make it yours
 
 ## Requirements
 
@@ -154,6 +146,7 @@ Works with Claude Code, Cursor, Codex, OpenClaw, Windsurf, Cline — anything th
 
 ## Roadmap
 
+- [ ] Aveil app integration
 - [ ] Trend visualizations (terminal sparklines)
 - [ ] Weekly digest mode
 - [ ] Custom signal thresholds
