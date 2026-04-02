@@ -426,7 +426,7 @@ body{background:#0a0a0f;color:#e2e8f0;font-family:Inter,-apple-system,BlinkMacSy
 .card{width:600px;max-width:100%;background:linear-gradient(180deg,#0f0f1a 0%,#0a0a0f 100%);border:1px solid rgba(124,58,237,0.2);border-radius:24px;overflow:hidden;padding:40px 32px}
 .header{text-align:center;margin-bottom:32px}
 .logo{font-size:14px;letter-spacing:4px;color:#7c3aed;font-weight:700;margin-bottom:4px}
-.subtitle{font-size:12px;color:#64748b;letter-spacing:1px}
+.subtitle{font-size:12px;color:#c4b5fd;letter-spacing:1px;font-weight:500}
 .score-section{text-align:center;margin-bottom:24px}
 .score-ring{width:140px;height:140px;border-radius:50%;background:conic-gradient(${color} ${pct * 3.6}deg,#1e1e2e ${pct * 3.6}deg);display:inline-flex;align-items:center;justify-content:center;position:relative;box-shadow:0 0 40px rgba(124,58,237,0.15)}
 .score-inner{width:110px;height:110px;border-radius:50%;background:#0a0a0f;display:flex;flex-direction:column;align-items:center;justify-content:center}
@@ -472,7 +472,7 @@ body{background:#0a0a0f;color:#e2e8f0;font-family:Inter,-apple-system,BlinkMacSy
 .footer-compat{font-size:11px;color:#7c3aed;margin-bottom:4px}
 .footer-mcp{display:inline-block;font-size:10px;color:#22c55e;background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.2);border-radius:6px;padding:2px 8px;margin:6px 0}
 .footer-github{font-size:11px;color:#475569;margin-top:6px}
-.header-privacy{font-size:11px;color:#22c55e;letter-spacing:0.5px;margin-top:4px}
+.header-privacy{font-size:10px;color:#475569;letter-spacing:0.5px;margin-top:4px}
 </style>
 </head>
 <body>
@@ -551,10 +551,10 @@ body{background:#0a0a0f;color:#e2e8f0;font-family:Inter,-apple-system,BlinkMacSy
   </div>` : ""}
 
   <div class="footer">
-    <div class="footer-brand">Generated with <a href="https://aveilx.com" style="color:#7c3aed;text-decoration:none">aveil-health</a> · <a href="https://aveilx.com" style="color:#7c3aed;text-decoration:none">aveilx.com</a></div>
+    <div class="footer-brand">Generated with <a href="https://aveilx.com" style="color:#60a5fa;text-decoration:none">aveil-health</a> · <a href="https://aveilx.com" style="color:#60a5fa;text-decoration:none">aveilx.com</a></div>
     <div class="footer-compat">Works with Claude Code · Local Models · Codex · OpenClaw</div>
     <div class="footer-mcp">🔌 MCP Server Available</div>
-    <div class="footer-github"><a href="https://github.com/alexalexxss/aveil-health" style="color:#475569;text-decoration:none">github.com/alexalexxss/aveil-health</a></div>
+    <div class="footer-github"><a href="https://github.com/alexalexxss/aveil-health" style="color:#60a5fa;text-decoration:none">github.com/alexalexxss/aveil-health</a></div>
   </div>
 </div>
 </body>
