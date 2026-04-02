@@ -184,25 +184,34 @@ export function computeComparisons(report) {
   const comps = [];
 
   if (report.recovery?.available && report.recovery.averageHRV) {
-    const b = getBenchmark("hrv", report.recovery.averageHRV);
-    if (b) comps.push({ metric: "HRV", value: `${Math.round(report.recovery.averageHRV)}ms`, tier: b.label, pct: b.pct });
+    const v = Math.round(report.recovery.averageHRV);
+    const b = getBenchmark("hrv", v);
+    if (b) comps.push({ metric: "HRV", value: `${v}ms`, tier: b.label, pct: b.pct,
+      fact: v > 60 ? "Higher HRV = stronger stress resilience and faster recovery" : "HRV reflects your autonomic nervous system's adaptability" });
   }
   if (report.recovery?.available && report.recovery.averageRHR) {
-    const b = getBenchmark("rhr", report.recovery.averageRHR);
-    if (b) comps.push({ metric: "Resting HR", value: `${Math.round(report.recovery.averageRHR)}bpm`, tier: b.label, pct: b.pct });
+    const v = Math.round(report.recovery.averageRHR);
+    const b = getBenchmark("rhr", v);
+    if (b) comps.push({ metric: "Resting HR", value: `${v}bpm`, tier: b.label, pct: b.pct,
+      fact: v < 55 ? "You have the resting heart rate of a trained endurance athlete" : v < 65 ? "Lower resting HR correlates with cardiovascular longevity" : "Resting HR improves with consistent aerobic training" });
   }
   if (report.activity?.available && report.activity.averages?.stepsPerDay) {
-    const b = getBenchmark("steps", report.activity.averages.stepsPerDay);
-    if (b) comps.push({ metric: "Daily Steps", value: report.activity.averages.stepsPerDay.toLocaleString(), tier: b.label, pct: b.pct });
+    const v = report.activity.averages.stepsPerDay;
+    const b = getBenchmark("steps", v);
+    if (b) comps.push({ metric: "Daily Steps", value: v.toLocaleString(), tier: b.label, pct: b.pct,
+      fact: v > 10000 ? "You exceed the 10K threshold linked to reduced all-cause mortality" : v > 7500 ? "Each additional 2,000 steps reduces cardiovascular risk ~8%" : "Even small increases in daily steps compound over time" });
   }
   if (report.sleep?.available && report.sleep.averages?.durationMinutes) {
     const hrs = report.sleep.averages.durationMinutes / 60;
     const b = getBenchmark("sleepHours", hrs);
-    if (b) comps.push({ metric: "Sleep Duration", value: `${hrs.toFixed(1)}h`, tier: b.label, pct: b.pct });
+    if (b) comps.push({ metric: "Sleep Duration", value: `${hrs.toFixed(1)}h`, tier: b.label, pct: b.pct,
+      fact: hrs >= 7 ? "You hit the 7-9h window where cognitive performance peaks" : "Adults sleeping <7h show measurable cognitive decline within days" });
   }
   if (report.sleep?.available && report.sleep.averages?.deepMinutes) {
-    const b = getBenchmark("deepSleep", report.sleep.averages.deepMinutes);
-    if (b) comps.push({ metric: "Deep Sleep", value: `${Math.round(report.sleep.averages.deepMinutes)}min`, tier: b.label, pct: b.pct });
+    const v = Math.round(report.sleep.averages.deepMinutes);
+    const b = getBenchmark("deepSleep", v);
+    if (b) comps.push({ metric: "Deep Sleep", value: `${v}min`, tier: b.label, pct: b.pct,
+      fact: v > 60 ? "Deep sleep is when growth hormone peaks and tissue repair happens" : "Deep sleep is your body's physical recovery window" });
   }
 
   return comps;
@@ -442,7 +451,7 @@ body{background:#0a0a0f;color:#e2e8f0;font-family:Inter,-apple-system,BlinkMacSy
 .grid-sub{font-size:11px;color:#64748b;margin-top:2px}
 .section-title{font-size:11px;text-transform:uppercase;letter-spacing:2px;color:#7c3aed;margin-bottom:12px;padding-top:8px}
 .comparisons{margin-bottom:24px}
-.comp-item{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(124,58,237,0.08)}
+.comp-item{display:flex;flex-direction:column;padding:10px 0;border-bottom:1px solid rgba(124,58,237,0.08)}
 .comp-item:last-child{border-bottom:none}
 .comp-left{display:flex;flex-direction:column}
 .comp-metric{font-size:12px;color:#94a3b8}
@@ -450,6 +459,7 @@ body{background:#0a0a0f;color:#e2e8f0;font-family:Inter,-apple-system,BlinkMacSy
 .comp-right{text-align:right}
 .comp-tier{font-size:13px;font-weight:600;color:#7c3aed}
 .comp-pct{font-size:10px;color:#64748b}
+.comp-fact{font-size:10px;color:#94a3b8;margin-top:6px;font-style:italic;text-align:center;padding:0 8px}
 .surprising{margin-bottom:24px}
 .surprising-item{display:flex;justify-content:space-between;align-items:baseline;padding:8px 0;border-bottom:1px solid rgba(124,58,237,0.08)}
 .surprising-item:last-child{border-bottom:none}
@@ -466,7 +476,8 @@ body{background:#0a0a0f;color:#e2e8f0;font-family:Inter,-apple-system,BlinkMacSy
 .footer-compat{font-size:11px;color:#7c3aed;margin-bottom:4px}
 .footer-mcp{display:inline-block;font-size:10px;color:#22c55e;background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.2);border-radius:6px;padding:2px 8px;margin:6px 0}
 .footer-github{font-size:11px;color:#475569;margin-top:6px}
-.footer-privacy{font-size:10px;color:#334155;margin-top:4px}
+.privacy-badge{text-align:center;margin-bottom:20px}
+.privacy-badge-text{display:inline-block;font-size:12px;font-weight:600;color:#22c55e;background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.18);border-radius:10px;padding:6px 16px;letter-spacing:0.3px}
 </style>
 </head>
 <body>
@@ -474,6 +485,10 @@ body{background:#0a0a0f;color:#e2e8f0;font-family:Inter,-apple-system,BlinkMacSy
   <div class="header">
     <div class="logo">▲ AVEIL</div>
     <div class="subtitle">${escapeHtml(periodLabel)}</div>
+  </div>
+
+  <div class="privacy-badge">
+    <div class="privacy-badge-text">🔒 100% local · zero uploads · open source</div>
   </div>
 
   <div class="score-section">
@@ -495,6 +510,10 @@ body{background:#0a0a0f;color:#e2e8f0;font-family:Inter,-apple-system,BlinkMacSy
     <div class="hero-boast-text">${escapeHtml(heroBoast.text)}</div>
   </div>` : ""}
 
+  ${derivedStat ? `<div class="derived-stat">
+    <div class="derived-stat-text">${escapeHtml(derivedStat.text)}</div>
+  </div>` : ""}
+
   ${gridItems.length ? `<div class="grid">${gridItems.map((g) => `
     <div class="grid-item">
       <div class="grid-label">${escapeHtml(g.label)}</div>
@@ -506,14 +525,17 @@ body{background:#0a0a0f;color:#e2e8f0;font-family:Inter,-apple-system,BlinkMacSy
   ${comparisons.length ? `<div class="comparisons">
     <div class="section-title">How You Compare</div>
     ${comparisons.map((c) => `<div class="comp-item">
-      <div class="comp-left">
-        <div class="comp-metric">${escapeHtml(c.metric)}</div>
-        <div class="comp-value">${escapeHtml(c.value)}</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;width:100%">
+        <div class="comp-left">
+          <div class="comp-metric">${escapeHtml(c.metric)}</div>
+          <div class="comp-value">${escapeHtml(c.value)}</div>
+        </div>
+        <div class="comp-right">
+          <div class="comp-tier">${escapeHtml(c.tier)}</div>
+          <div class="comp-pct">${escapeHtml(c.pct)}</div>
+        </div>
       </div>
-      <div class="comp-right">
-        <div class="comp-tier">${escapeHtml(c.tier)}</div>
-        <div class="comp-pct">${escapeHtml(c.pct)}</div>
-      </div>
+      ${c.fact ? `<div class="comp-fact">${escapeHtml(c.fact)}</div>` : ""}
     </div>`).join("")}
   </div>` : ""}
 
@@ -536,12 +558,7 @@ body{background:#0a0a0f;color:#e2e8f0;font-family:Inter,-apple-system,BlinkMacSy
     </div>`).join("")}
   </div>` : ""}
 
-  ${derivedStat ? `<div class="derived-stat">
-    <div class="derived-stat-text">${escapeHtml(derivedStat.text)}</div>
-  </div>` : ""}
-
   <div class="footer">
-    <div class="footer-privacy">🔒 100% local · zero uploads · open source</div>
     <div class="footer-brand">Generated with aveil-health · aveilx.com</div>
     <div class="footer-compat">Works with Claude Code · Local Models · Codex · OpenClaw</div>
     <div class="footer-mcp">🔌 MCP Server Available</div>
