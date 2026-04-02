@@ -95,7 +95,9 @@ async function main() {
     process.exit(1);
   }
 
-  const days = parseInt(args[args.indexOf("--days") + 1]) || 30;
+  const daysIdx = args.indexOf("--days");
+  const defaultDays = command === "wrapped" ? 365 : 30;
+  const days = daysIdx !== -1 ? parseInt(args[daysIdx + 1]) : defaultDays;
   const jsonOutput = args.includes("--json");
 
   console.log(`\n  Parsing Apple Health export (last ${days} days)...`);

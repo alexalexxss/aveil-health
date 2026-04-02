@@ -36,8 +36,14 @@ function analyzeSleep(sleepRecords, heartRateRecords, hrvRecords) {
 
   // Group sleep by night (use start date, group by calendar date of wake)
   const nights = groupSleepByNight(sleepRecords);
-  const recentNights = nights.slice(-14); // last 14 nights
+  const recentNights = nights.slice(-14); // last 14 nights for trend
+  const allNights = nights.filter((n) => n.totalMinutes > 0);
   const lastNight = nights[nights.length - 1];
+  // Best night across all data (cap at 14h to filter source-overlap artifacts)
+  const validNights = allNights.filter((n) => n.totalMinutes <= 840);
+  const bestNight = validNights.length
+    ? validNights.reduce((best, n) => (n.totalMinutes > best.totalMinutes ? n : best))
+    : null;
 
   const durations = recentNights.map((n) => n.totalMinutes);
   const avgDuration = mean(durations);
@@ -88,6 +94,9 @@ function analyzeSleep(sleepRecords, heartRateRecords, hrvRecords) {
       bedtimeHour: round(avgBedtime, 1),
       bedtimeVariability: round(bedtimeVariability, 2),
     },
+    bestNight: bestNight
+      ? { date: bestNight.date, totalMinutes: bestNight.totalMinutes }
+      : null,
     trend: durations.length >= 7 ? trendDirection(durations) : "insufficient_data",
   };
 }
@@ -163,7 +172,11 @@ function analyzeActivity(steps, activeEnergy, workouts) {
 
   const dailySteps = aggregateByDay(steps);
   const dailyEnergy = aggregateByDay(activeEnergy);
-  const recentDays = Object.keys(dailySteps).sort().slice(-14);
+  const allDays = Object.keys(dailySteps).sort();
+  const recentDays = allDays.slice(-14); // for trend/last-day
+  // Use all days for averages (more accurate for wrapped)
+  const allStepValues = allDays.map((d) => dailySteps[d] || 0).filter((v) => v > 0); // exclude zero-step days
+  const allEnergyValues = allDays.map((d) => dailyEnergy[d] || 0).filter((v) => v > 0);
 
   const stepValues = recentDays.map((d) => dailySteps[d] || 0);
   const energyValues = recentDays.map((d) => dailyEnergy[d] || 0);
@@ -172,10 +185,11 @@ function analyzeActivity(steps, activeEnergy, workouts) {
 
   return {
     available: true,
-    daysAnalyzed: recentDays.length,
+    daysAnalyzed: allDays.length,
+    totalDays: allDays.length,
     averages: {
-      stepsPerDay: round(mean(stepValues)),
-      activeEnergyPerDay: round(mean(energyValues)),
+      stepsPerDay: round(mean(allStepValues.length ? allStepValues : stepValues)),
+      activeEnergyPerDay: round(mean(allEnergyValues.length ? allEnergyValues : energyValues)),
     },
     lastDay: recentDays.length
       ? {
@@ -202,8 +216,12 @@ function analyzeRecovery(hrvRecords, restingHRRecords, sleepAnalysis) {
   const dailyHRV = aggregateByDay(hrvRecords, "mean");
   const dailyRHR = aggregateByDay(restingHRRecords, "mean");
 
-  const recentDays = Object.keys(dailyHRV).sort().slice(-14);
+  const allHRVDays = Object.keys(dailyHRV).sort();
+  const recentDays = allHRVDays.slice(-14);
   const hrvValues = recentDays.map((d) => dailyHRV[d]);
+  // Peak HRV across all data
+  const allHRVValues = allHRVDays.map((d) => ({ date: d, value: dailyHRV[d] }));
+  const peakHRVEntry = allHRVValues.reduce((best, e) => (e.value > (best?.value || 0) ? e : best), null);
   const rhrValues = recentDays.map((d) => dailyRHR[d]).filter(Boolean);
 
   const avgHRV = mean(hrvValues);
@@ -226,6 +244,7 @@ function analyzeRecovery(hrvRecords, restingHRRecords, sleepAnalysis) {
     averageRHR: avgRHR ? round(avgRHR) : null,
     recoveryScore,
     readiness: recoveryScore >= 70 ? "good" : recoveryScore >= 50 ? "moderate" : "low",
+    peakHRV: peakHRVEntry ? { value: round(peakHRVEntry.value, 1), date: peakHRVEntry.date } : null,
     trend: hrvValues.length >= 7 ? trendDirection(hrvValues) : "insufficient_data",
   };
 }

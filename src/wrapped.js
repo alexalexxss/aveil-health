@@ -3,6 +3,56 @@
  * Think Spotify Wrapped meets WHOOP — dark, premium, screenshottable.
  */
 
+// ─── Population benchmarks (age-adjusted general adult ranges) ───
+const BENCHMARKS = {
+  hrv: [
+    { max: 20, label: "Below average", pct: "bottom 20%" },
+    { max: 40, label: "Average", pct: "40th percentile" },
+    { max: 60, label: "Good", pct: "60th percentile" },
+    { max: 80, label: "Very good", pct: "top 25%" },
+    { max: 120, label: "Excellent", pct: "top 10%" },
+    { max: Infinity, label: "Elite", pct: "top 5%" },
+  ],
+  rhr: [
+    { max: 50, label: "Athlete", pct: "top 5%" },
+    { max: 60, label: "Excellent", pct: "top 15%" },
+    { max: 70, label: "Good", pct: "top 40%" },
+    { max: 80, label: "Average", pct: "50th percentile" },
+    { max: Infinity, label: "Above average", pct: "below 50th" },
+  ],
+  steps: [
+    { max: 4000, label: "Sedentary", pct: "bottom 25%" },
+    { max: 7500, label: "Low active", pct: "40th percentile" },
+    { max: 10000, label: "Somewhat active", pct: "60th percentile" },
+    { max: 12500, label: "Active", pct: "top 25%" },
+    { max: Infinity, label: "Highly active", pct: "top 10%" },
+  ],
+  sleepHours: [
+    { max: 5, label: "Very short", pct: "bottom 10%" },
+    { max: 6, label: "Short", pct: "bottom 25%" },
+    { max: 7, label: "Adequate", pct: "50th percentile" },
+    { max: 8, label: "Optimal", pct: "top 30%" },
+    { max: 9, label: "Long", pct: "top 15%" },
+    { max: Infinity, label: "Very long", pct: "top 5%" },
+  ],
+  deepSleep: [
+    { max: 20, label: "Low", pct: "bottom 20%" },
+    { max: 40, label: "Below average", pct: "35th percentile" },
+    { max: 60, label: "Average", pct: "55th percentile" },
+    { max: 90, label: "Good", pct: "top 25%" },
+    { max: Infinity, label: "Excellent", pct: "top 10%" },
+  ],
+};
+
+function getBenchmark(category, value) {
+  const tiers = BENCHMARKS[category];
+  if (!tiers || value == null) return null;
+  for (const t of tiers) {
+    if (value <= t.max) return t;
+  }
+  return tiers[tiers.length - 1];
+}
+
 /**
  * Compute a fun health identity based on analysis patterns.
  */
@@ -29,19 +79,50 @@ export function computeHealthIdentity(report) {
 }
 
 /**
+ * Compute population comparisons for key metrics.
+ */
+export function computeComparisons(report) {
+  const comps = [];
+
+  if (report.recovery?.available && report.recovery.averageHRV) {
+    const b = getBenchmark("hrv", report.recovery.averageHRV);
+    if (b) comps.push({ metric: "HRV", value: `${Math.round(report.recovery.averageHRV)}ms`, tier: b.label, pct: b.pct });
+  }
+  if (report.recovery?.available && report.recovery.averageRHR) {
+    const b = getBenchmark("rhr", report.recovery.averageRHR);
+    if (b) comps.push({ metric: "Resting HR", value: `${Math.round(report.recovery.averageRHR)}bpm`, tier: b.label, pct: b.pct });
+  }
+  if (report.activity?.available && report.activity.averages?.stepsPerDay) {
+    const b = getBenchmark("steps", report.activity.averages.stepsPerDay);
+    if (b) comps.push({ metric: "Daily Steps", value: report.activity.averages.stepsPerDay.toLocaleString(), tier: b.label, pct: b.pct });
+  }
+  if (report.sleep?.available && report.sleep.averages?.durationMinutes) {
+    const hrs = report.sleep.averages.durationMinutes / 60;
+    const b = getBenchmark("sleepHours", hrs);
+    if (b) comps.push({ metric: "Sleep Duration", value: `${hrs.toFixed(1)}h`, tier: b.label, pct: b.pct });
+  }
+  if (report.sleep?.available && report.sleep.averages?.deepMinutes) {
+    const b = getBenchmark("deepSleep", report.sleep.averages.deepMinutes);
+    if (b) comps.push({ metric: "Deep Sleep", value: `${Math.round(report.sleep.averages.deepMinutes)}min`, tier: b.label, pct: b.pct });
+  }
+
+  return comps;
+}
+
+/**
  * Compute 2-3 surprising / shareable stats from the report.
  */
 export function computeSurprisingStats(report) {
   const stats = [];
+  const daysAnalyzed = report.activity?.daysAnalyzed || report.sleep?.nightsAnalyzed || report.recovery?.daysAnalyzed || 0;
 
-  // Total steps
-  if (report.activity?.available && report.activity.averages?.stepsPerDay) {
-    const days = 14;
-    const total = Math.round(report.activity.averages.stepsPerDay * days);
+  // Total steps in the analyzed period
+  if (report.activity?.available && report.activity.averages?.stepsPerDay && daysAnalyzed > 0) {
+    const total = Math.round(report.activity.averages.stepsPerDay * daysAnalyzed);
     stats.push({
       label: "Total Steps",
       value: total.toLocaleString(),
-      detail: `~${days} days tracked`,
+      detail: `across ${daysAnalyzed} days`,
     });
   }
 
@@ -76,12 +157,98 @@ export function computeSurprisingStats(report) {
   return stats.slice(0, 3);
 }
 
+/**
+ * Generate better wrapped-specific insights (not just the generic signals).
+ */
+function generateWrappedInsights(report) {
+  const insights = [];
+
+  // Sleep architecture insight
+  if (report.sleep?.available && report.sleep.averages) {
+    const { deepMinutes, remMinutes, durationMinutes } = report.sleep.averages;
+    const deepPct = durationMinutes > 0 ? ((deepMinutes / (durationMinutes / 60 * 60)) * 100).toFixed(0) : 0;
+    const remPct = durationMinutes > 0 ? ((remMinutes / (durationMinutes / 60 * 60)) * 100).toFixed(0) : 0;
+    if (deepMinutes < 45) {
+      insights.push({
+        title: "Deep sleep is your bottleneck",
+        detail: `${deepMinutes}min avg deep sleep (${deepPct}% of total). Adults need 60-90min for physical recovery. Later dinners, alcohol, and elevated body temperature are common suppressors.`,
+      });
+    } else if (deepMinutes >= 60) {
+      insights.push({
+        title: "Deep sleep is a strength",
+        detail: `${deepMinutes}min avg — above the 60min recovery threshold. This supports muscle repair, immune function, and memory consolidation.`,
+      });
+    }
+    if (remMinutes < 60) {
+      insights.push({
+        title: "REM sleep could improve",
+        detail: `${remMinutes}min avg REM. This stage handles emotional processing and learning. Common suppressors: stress, late caffeine, irregular schedule.`,
+      });
+    }
+  }
+
+  // HRV + recovery insight
+  if (report.recovery?.available) {
+    const { averageHRV, averageRHR, latestHRV } = report.recovery;
+    if (averageHRV && latestHRV) {
+      const diff = latestHRV - averageHRV;
+      if (diff > 10) {
+        insights.push({
+          title: "Recovery is trending up",
+          detail: `Latest HRV ${Math.round(latestHRV)}ms is ${Math.round(diff)}ms above your baseline. Your autonomic nervous system is responding well to your current routine.`,
+        });
+      } else if (diff < -10) {
+        insights.push({
+          title: "Recovery dip detected",
+          detail: `Latest HRV ${Math.round(latestHRV)}ms is ${Math.abs(Math.round(diff))}ms below baseline. Common causes: poor sleep, alcohol, stress, overtraining, or illness onset.`,
+        });
+      }
+    }
+    if (averageRHR && averageRHR < 55) {
+      insights.push({
+        title: "Resting heart rate is strong",
+        detail: `${Math.round(averageRHR)}bpm avg — athlete range. This correlates with cardiovascular fitness and longevity.`,
+      });
+    }
+  }
+
+  // Bedtime consistency insight
+  if (report.sleep?.available && report.sleep.averages?.bedtimeVariability != null) {
+    const varMin = Math.round(report.sleep.averages.bedtimeVariability * 60);
+    if (varMin > 60) {
+      insights.push({
+        title: "Bedtime variability is high",
+        detail: `±${varMin}min swing. Research links irregular sleep timing to metabolic disruption and reduced cognitive performance — even when total hours are adequate.`,
+      });
+    } else if (varMin <= 30) {
+      insights.push({
+        title: "Consistent sleep timing",
+        detail: `±${varMin}min variability — very consistent. This stability strengthens circadian rhythm and improves sleep quality over time.`,
+      });
+    }
+  }
+
+  // Activity insight
+  if (report.activity?.available && report.activity.averages?.stepsPerDay) {
+    const steps = report.activity.averages.stepsPerDay;
+    if (steps >= 10000) {
+      insights.push({
+        title: "Daily movement is solid",
+        detail: `${steps.toLocaleString()} steps/day avg. Above the 10K threshold associated with reduced all-cause mortality risk.`,
+      });
+    } else if (steps < 5000) {
+      insights.push({
+        title: "Movement is below baseline",
+        detail: `${steps.toLocaleString()} steps/day. Studies show each additional 2,000 steps reduces cardiovascular risk by ~8%. Small increases compound.`,
+      });
+    }
+  }
+
+  return insights.slice(0, 3);
+}
+
 function escapeHtml(str) {
-  return String(str)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
+  return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
 function scoreColor(score) {
@@ -92,13 +259,12 @@ function scoreColor(score) {
 
 /**
  * Generate a self-contained HTML file for the health card.
- * @param {AnalysisReport} report
- * @param {object} options
- * @returns {{ html: string, filename: string }}
  */
 export function generateWrappedHTML(report, options = {}) {
   const identity = computeHealthIdentity(report);
   const surprising = computeSurprisingStats(report);
+  const comparisons = computeComparisons(report);
+  const insights = generateWrappedInsights(report);
   const score = report.overall?.score ?? 0;
   const pct = Math.min(100, Math.max(0, score));
   const color = scoreColor(score);
@@ -135,9 +301,6 @@ export function generateWrappedHTML(report, options = {}) {
     });
   }
 
-  // Top signals
-  const signals = (report.signals || []).slice(0, 3);
-
   const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -166,17 +329,26 @@ body{background:#0a0a0f;color:#e2e8f0;font-family:Inter,-apple-system,BlinkMacSy
 .grid-value{font-size:18px;font-weight:700;color:#f1f5f9}
 .grid-sub{font-size:11px;color:#64748b;margin-top:2px}
 .section-title{font-size:11px;text-transform:uppercase;letter-spacing:2px;color:#7c3aed;margin-bottom:12px;padding-top:8px}
+.comparisons{margin-bottom:24px}
+.comp-item{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(124,58,237,0.08)}
+.comp-item:last-child{border-bottom:none}
+.comp-left{display:flex;flex-direction:column}
+.comp-metric{font-size:12px;color:#94a3b8}
+.comp-value{font-size:14px;font-weight:600;color:#f1f5f9}
+.comp-right{text-align:right}
+.comp-tier{font-size:13px;font-weight:600;color:#7c3aed}
+.comp-pct{font-size:10px;color:#64748b}
 .surprising{margin-bottom:24px}
 .surprising-item{display:flex;justify-content:space-between;align-items:baseline;padding:8px 0;border-bottom:1px solid rgba(124,58,237,0.08)}
 .surprising-item:last-child{border-bottom:none}
 .surprising-label{font-size:12px;color:#94a3b8}
 .surprising-value{font-size:16px;font-weight:700;color:#f1f5f9}
 .surprising-detail{font-size:10px;color:#64748b}
-.signals{margin-bottom:28px}
-.signal{padding:8px 0;border-bottom:1px solid rgba(124,58,237,0.08)}
-.signal:last-child{border-bottom:none}
-.signal-title{font-size:13px;font-weight:600;color:#e2e8f0}
-.signal-detail{font-size:11px;color:#64748b;margin-top:2px}
+.insights{margin-bottom:28px}
+.insight{padding:10px 0;border-bottom:1px solid rgba(124,58,237,0.08)}
+.insight:last-child{border-bottom:none}
+.insight-title{font-size:13px;font-weight:600;color:#e2e8f0}
+.insight-detail{font-size:11px;color:#94a3b8;margin-top:3px;line-height:1.5}
 .footer{text-align:center;padding-top:20px;border-top:1px solid rgba(124,58,237,0.12)}
 .footer-brand{font-size:12px;color:#64748b;margin-bottom:6px}
 .footer-compat{font-size:11px;color:#7c3aed;margin-bottom:4px}
@@ -215,6 +387,20 @@ body{background:#0a0a0f;color:#e2e8f0;font-family:Inter,-apple-system,BlinkMacSy
     </div>`).join("")}
   </div>` : ""}
 
+  ${comparisons.length ? `<div class="comparisons">
+    <div class="section-title">How You Compare</div>
+    ${comparisons.map((c) => `<div class="comp-item">
+      <div class="comp-left">
+        <div class="comp-metric">${escapeHtml(c.metric)}</div>
+        <div class="comp-value">${escapeHtml(c.value)}</div>
+      </div>
+      <div class="comp-right">
+        <div class="comp-tier">${escapeHtml(c.tier)}</div>
+        <div class="comp-pct">${escapeHtml(c.pct)}</div>
+      </div>
+    </div>`).join("")}
+  </div>` : ""}
+
   ${surprising.length ? `<div class="surprising">
     <div class="section-title">Highlights</div>
     ${surprising.map((s) => `<div class="surprising-item">
@@ -226,17 +412,17 @@ body{background:#0a0a0f;color:#e2e8f0;font-family:Inter,-apple-system,BlinkMacSy
     </div>`).join("")}
   </div>` : ""}
 
-  ${signals.length ? `<div class="signals">
-    <div class="section-title">Signals</div>
-    ${signals.map((s) => `<div class="signal">
-      <div class="signal-title">${escapeHtml(s.title)}</div>
-      <div class="signal-detail">${escapeHtml(s.detail)}</div>
+  ${insights.length ? `<div class="insights">
+    <div class="section-title">Insights</div>
+    ${insights.map((i) => `<div class="insight">
+      <div class="insight-title">${escapeHtml(i.title)}</div>
+      <div class="insight-detail">${escapeHtml(i.detail)}</div>
     </div>`).join("")}
   </div>` : ""}
 
   <div class="footer">
     <div class="footer-brand">Generated with aveil-health · aveilx.com</div>
-    <div class="footer-compat">Works with Claude Code · Cursor · Codex · OpenClaw</div>
+    <div class="footer-compat">Works with Claude Code · Local Models · Codex · OpenClaw</div>
     <div class="footer-mcp">🔌 MCP Server Available</div>
     <div class="footer-github">github.com/alexalexxss/aveil-health</div>
     <div class="footer-privacy">100% local · zero uploads · open source</div>
