@@ -63,24 +63,20 @@ export function computeHealthIdentity(report) {
   const score = report.overall?.score ?? 0;
 
   if (score > 85) {
-    const proofs = [];
-    if (r?.available && r.averageHRV > 60) proofs.push(`${Math.round(r.averageHRV)}ms HRV`);
-    if (s?.available && s.averages?.bedtimeVariability < 0.5) proofs.push(`±${Math.round(s.averages.bedtimeVariability * 60)}min bedtime drift`);
-    if (a?.available && a.averages?.stepsPerDay > 10000) proofs.push(`${(a.averages.stepsPerDay / 1000).toFixed(1)}K steps/day`);
-    return { title: "The Optimizer", tagline: proofs.length ? proofs.join(" · ") : "Dialed in across the board", emoji: "⚡" };
+    return { title: "The Optimizer", tagline: "You treat your body like a system — and the data proves it's working", emoji: "⚡" };
   }
   if (s?.available && s.averages?.bedtimeHour < 22 && s.averages?.bedtimeVariability < 0.5)
-    return { title: "The Clockwork Sleeper", tagline: `Median bedtime drift ±${Math.round(s.averages.bedtimeVariability * 60)}min`, emoji: "🎯" };
+    return { title: "The Clockwork Sleeper", tagline: "Your circadian rhythm runs on rails — consistency is your edge", emoji: "🎯" };
   if (r?.available && r.averageHRV > 80)
-    return { title: "The Recovered", tagline: `Avg HRV ${Math.round(r.averageHRV)}ms — nervous system thriving`, emoji: "🧘" };
+    return { title: "The Recovered", tagline: "Your nervous system bounces back faster than most — keep protecting it", emoji: "🧘" };
   if (a?.available && a.averages?.stepsPerDay > 12000)
-    return { title: "The Mover", tagline: `${(a.averages.stepsPerDay / 1000).toFixed(1)}K steps/day avg`, emoji: "🏃" };
+    return { title: "The Mover", tagline: "You outpace most people without thinking about it — movement is your default", emoji: "🏃" };
   if (s?.available && s.averages?.deepMinutes > 60)
-    return { title: "The Deep Sleeper", tagline: `${Math.round(s.averages.deepMinutes)}min avg deep sleep`, emoji: "🌙" };
+    return { title: "The Deep Sleeper", tagline: "You spend more time in deep sleep than most — your body repairs while others toss and turn", emoji: "🌙" };
   if (s?.available && s.averages?.bedtimeHour >= 24)
-    return { title: "The Night Owl", tagline: "Late nights, your own rhythm", emoji: "🦉" };
+    return { title: "The Night Owl", tagline: "Late nights are your canvas — you've built your own rhythm", emoji: "🦉" };
 
-  return { title: "The Tracker", tagline: "Measuring what matters", emoji: "📊" };
+  return { title: "The Tracker", tagline: "You measure what matters — that alone puts you ahead", emoji: "📊" };
 }
 
 /**
@@ -476,19 +472,15 @@ body{background:#0a0a0f;color:#e2e8f0;font-family:Inter,-apple-system,BlinkMacSy
 .footer-compat{font-size:11px;color:#7c3aed;margin-bottom:4px}
 .footer-mcp{display:inline-block;font-size:10px;color:#22c55e;background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.2);border-radius:6px;padding:2px 8px;margin:6px 0}
 .footer-github{font-size:11px;color:#475569;margin-top:6px}
-.privacy-badge{text-align:center;margin-bottom:20px}
-.privacy-badge-text{display:inline-block;font-size:12px;font-weight:600;color:#22c55e;background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.18);border-radius:10px;padding:6px 16px;letter-spacing:0.3px}
+.header-privacy{font-size:11px;color:#22c55e;letter-spacing:0.5px;margin-top:4px}
 </style>
 </head>
 <body>
 <div class="card">
   <div class="header">
-    <div class="logo">▲ AVEIL</div>
+    <div class="logo">HEALTH WRAPPED</div>
     <div class="subtitle">${escapeHtml(periodLabel)}</div>
-  </div>
-
-  <div class="privacy-badge">
-    <div class="privacy-badge-text">🔒 100% local · zero uploads · open source</div>
+    <div class="header-privacy">🔒 100% local</div>
   </div>
 
   <div class="score-section">
@@ -559,10 +551,10 @@ body{background:#0a0a0f;color:#e2e8f0;font-family:Inter,-apple-system,BlinkMacSy
   </div>` : ""}
 
   <div class="footer">
-    <div class="footer-brand">Generated with aveil-health · aveilx.com</div>
+    <div class="footer-brand">Generated with <a href="https://aveilx.com" style="color:#7c3aed;text-decoration:none">aveil-health</a> · <a href="https://aveilx.com" style="color:#7c3aed;text-decoration:none">aveilx.com</a></div>
     <div class="footer-compat">Works with Claude Code · Local Models · Codex · OpenClaw</div>
     <div class="footer-mcp">🔌 MCP Server Available</div>
-    <div class="footer-github">github.com/alexalexxss/aveil-health</div>
+    <div class="footer-github"><a href="https://github.com/alexalexxss/aveil-health" style="color:#475569;text-decoration:none">github.com/alexalexxss/aveil-health</a></div>
   </div>
 </div>
 </body>
