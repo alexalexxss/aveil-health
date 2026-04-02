@@ -73,6 +73,12 @@ export function computeHealthIdentity(report) {
     return { title: "The Mover", tagline: "You outpace most people without thinking about it — movement is your default", emoji: "🏃" };
   if (s?.available && s.averages?.deepMinutes > 60)
     return { title: "The Deep Sleeper", tagline: "You spend more time in deep sleep than most — your body repairs while others toss and turn", emoji: "🌙" };
+  if (r?.available && r.averageRHR && r.averageRHR < 55)
+    return { title: "The Endurance Engine", tagline: "Your resting heart rate says athlete — your cardiovascular system is built for the long game", emoji: "❤️" };
+  if (s?.available && s.averages?.durationMinutes > 480)
+    return { title: "The Recharger", tagline: "You prioritize recovery over hustle — and your body thanks you for it", emoji: "🔋" };
+  if (a?.available && a.averages?.activeEnergyPerDay > 600)
+    return { title: "The Burner", tagline: "High energy output is your baseline — you run hot and recover to match", emoji: "🔥" };
   if (s?.available && s.averages?.bedtimeHour >= 24)
     return { title: "The Night Owl", tagline: "Late nights are your canvas — you've built your own rhythm", emoji: "🦉" };
 
@@ -564,4 +570,80 @@ body{background:#0a0a0f;color:#e2e8f0;font-family:Inter,-apple-system,BlinkMacSy
     html,
     filename: `aveil-wrapped-${today}.html`,
   };
+}
+
+/**
+ * Generate demo cards for all archetypes with mock data.
+ * Great for launch assets and showcasing variety.
+ */
+export function generateDemoCards(outDir) {
+  const { mkdirSync, writeFileSync } = await_fs();
+  mkdirSync(outDir, { recursive: true });
+
+  const demos = [
+    { name: "optimizer", score: 88, sleep: { dur: 465, deep: 72, rem: 95, btHour: 21.5, btVar: 0.3 }, hrv: 110, rhr: 48, steps: 13900, kcal: 850 },
+    { name: "clockwork-sleeper", score: 75, sleep: { dur: 440, deep: 55, rem: 80, btHour: 21.8, btVar: 0.25 }, hrv: 55, rhr: 62, steps: 8500, kcal: 520 },
+    { name: "recovered", score: 78, sleep: { dur: 430, deep: 50, rem: 85, btHour: 22.5, btVar: 0.6 }, hrv: 95, rhr: 56, steps: 9200, kcal: 600 },
+    { name: "mover", score: 72, sleep: { dur: 400, deep: 45, rem: 70, btHour: 23.0, btVar: 0.7 }, hrv: 50, rhr: 65, steps: 15000, kcal: 920 },
+    { name: "deep-sleeper", score: 76, sleep: { dur: 470, deep: 80, rem: 90, btHour: 22.0, btVar: 0.5 }, hrv: 60, rhr: 60, steps: 7000, kcal: 480 },
+    { name: "endurance-engine", score: 74, sleep: { dur: 420, deep: 55, rem: 75, btHour: 22.5, btVar: 0.6 }, hrv: 65, rhr: 48, steps: 11000, kcal: 780 },
+    { name: "recharger", score: 70, sleep: { dur: 510, deep: 65, rem: 100, btHour: 21.0, btVar: 0.4 }, hrv: 58, rhr: 62, steps: 6500, kcal: 450 },
+    { name: "burner", score: 73, sleep: { dur: 410, deep: 48, rem: 72, btHour: 22.8, btVar: 0.55 }, hrv: 52, rhr: 58, steps: 10500, kcal: 920 },
+    { name: "night-owl", score: 62, sleep: { dur: 380, deep: 40, rem: 65, btHour: 24.5, btVar: 0.8 }, hrv: 45, rhr: 68, steps: 6000, kcal: 400 },
+    { name: "tracker", score: 55, sleep: { dur: 390, deep: 35, rem: 60, btHour: 23.5, btVar: 1.0 }, hrv: 40, rhr: 72, steps: 5500, kcal: 350 },
+  ];
+
+  const files = [];
+  for (const d of demos) {
+    const report = {
+      overall: { score: d.score },
+      sleep: {
+        available: true,
+        nightsAnalyzed: 30,
+        averages: {
+          durationMinutes: d.sleep.dur,
+          deepMinutes: d.sleep.deep,
+          remMinutes: d.sleep.rem,
+          bedtimeHour: d.sleep.btHour,
+          bedtimeVariability: d.sleep.btVar,
+        },
+        bestNight: { totalMinutes: d.sleep.dur + 60, date: "2026-03-15" },
+        trend: "stable",
+      },
+      activity: {
+        available: true,
+        totalDays: 365,
+        daysAnalyzed: 365,
+        averages: {
+          stepsPerDay: d.steps,
+          activeEnergyPerDay: d.kcal,
+        },
+      },
+      recovery: {
+        available: true,
+        daysAnalyzed: 30,
+        latestHRV: d.hrv + 5,
+        averageHRV: d.hrv,
+        averageRHR: d.rhr,
+        recoveryScore: d.score > 70 ? 75 : 55,
+        readiness: d.score > 70 ? "good" : "moderate",
+        peakHRV: { value: d.hrv + 30, date: "2026-02-20" },
+      },
+      recordCount: 500000 + Math.floor(Math.random() * 500000),
+      signals: [],
+    };
+
+    const { html, filename } = generateWrappedHTML(report);
+    const outFile = `${outDir}/wrapped-${d.name}.html`;
+    writeFileSync(outFile, html);
+    files.push(`wrapped-${d.name}.html`);
+  }
+
+  return files;
+}
+
+// Lazy fs import for demo generation
+import { mkdirSync, writeFileSync } from "node:fs";
+function await_fs() {
+  return { mkdirSync, writeFileSync };
 }

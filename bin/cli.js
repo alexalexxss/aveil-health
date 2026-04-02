@@ -60,10 +60,21 @@ async function main() {
     return;
   }
 
-  if (command !== "analyze" && command !== "wrapped") {
-    console.error(`Unknown command: ${command}. Use "analyze", "wrapped", or "mcp".`);
+  if (command !== "analyze" && command !== "wrapped" && command !== "demo") {
+    console.error(`Unknown command: ${command}. Use "analyze", "wrapped", "demo", or "mcp".`);
     printUsage();
     process.exit(1);
+  }
+
+  // Demo mode: generate all archetype cards with mock data
+  if (command === "demo") {
+    const { generateDemoCards } = await import("../src/wrapped.js");
+    const outDir = resolve(args[1] || "demo-cards");
+    const cards = generateDemoCards(outDir);
+    console.log(`\n  ✨ Generated ${cards.length} demo cards in ${outDir}/`);
+    for (const c of cards) console.log(`    • ${c}`);
+    console.log();
+    process.exit(0);
   }
 
   let filePath = args[1];
