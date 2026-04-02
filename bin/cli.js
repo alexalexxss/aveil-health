@@ -35,6 +35,8 @@ function printUsage() {
     aveil-health analyze export.zip --days 14
     aveil-health analyze export.xml --json > report.json
     aveil-health wrapped export.zip --open
+    aveil-health wrapped export.zip --period monthly
+    aveil-health wrapped export.zip --period weekly
 
   MCP Server:
     Set AVEIL_HEALTH_EXPORT=/path/to/export.xml then:
@@ -96,7 +98,11 @@ async function main() {
   }
 
   const daysIdx = args.indexOf("--days");
-  const defaultDays = command === "wrapped" ? 365 : 30;
+  const periodIdx = args.indexOf("--period");
+  const period = periodIdx !== -1 ? args[periodIdx + 1] : null;
+  let defaultDays = command === "wrapped" ? 365 : 30;
+  if (period === "monthly" || period === "month") defaultDays = 30;
+  else if (period === "weekly" || period === "week") defaultDays = 7;
   const days = daysIdx !== -1 ? parseInt(args[daysIdx + 1]) : defaultDays;
   const jsonOutput = args.includes("--json");
 

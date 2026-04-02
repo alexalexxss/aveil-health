@@ -269,6 +269,13 @@ export function generateWrappedHTML(report, options = {}) {
   const pct = Math.min(100, Math.max(0, score));
   const color = scoreColor(score);
   const today = new Date().toISOString().slice(0, 10);
+  const daysAnalyzed = report.activity?.totalDays || report.sleep?.nightsAnalyzed || report.recovery?.daysAnalyzed || 365;
+  const endDate = new Date();
+  const startDate = new Date(endDate);
+  startDate.setDate(startDate.getDate() - daysAnalyzed);
+  const periodStart = startDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+  const periodEnd = endDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+  const periodLabel = periodStart === periodEnd ? periodStart : `${periodStart} – ${periodEnd}`;
 
   // Stats grid items
   const gridItems = [];
@@ -289,8 +296,8 @@ export function generateWrappedHTML(report, options = {}) {
   if (report.activity?.available && report.activity.averages) {
     gridItems.push({
       label: "Activity",
-      value: `${report.activity.averages.stepsPerDay?.toLocaleString() || "—"}/day`,
-      sub: `${report.activity.averages.activeEnergyPerDay || "—"} kcal avg`,
+      value: `${report.activity.averages.activeEnergyPerDay?.toLocaleString() || "—"} kcal/day`,
+      sub: "active energy avg",
     });
   }
   if (report.sleep?.available && report.sleep.averages?.bedtimeVariability != null) {
@@ -361,7 +368,7 @@ body{background:#0a0a0f;color:#e2e8f0;font-family:Inter,-apple-system,BlinkMacSy
 <div class="card">
   <div class="header">
     <div class="logo">▲ AVEIL</div>
-    <div class="subtitle">YOUR HEALTH REPORT · ${escapeHtml(today)}</div>
+    <div class="subtitle">${escapeHtml(periodLabel)}</div>
   </div>
 
   <div class="score-section">
