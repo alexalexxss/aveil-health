@@ -4,6 +4,16 @@ Private, local Apple Health analysis in your terminal. No uploads, no accounts, 
 
 Turn your Apple Health export into actionable signals on sleep, recovery, activity, and nutrition — everything stays on your machine.
 
+## Share Your Health
+
+Generate a beautiful, shareable health card:
+
+```bash
+npx aveil-health wrapped export.zip
+```
+
+Creates a stunning dark-mode card you can screenshot and share — score ring, health identity, stats, signals. Opens in your browser.
+
 ## Quick Start
 
 ```bash

@@ -9,7 +9,8 @@ import { parseHealthExport } from "../src/parser.js";
 import { analyze } from "../src/analyze.js";
 import { formatReport, formatJSON } from "../src/format.js";
 import { startMcpServer } from "../src/mcp-server.js";
-import { existsSync } from "node:fs";
+import { generateWrappedHTML } from "../src/wrapped.js";
+import { existsSync, writeFileSync } from "node:fs";
 import { resolve, extname } from "node:path";
 import { execSync } from "node:child_process";
 
@@ -21,6 +22,7 @@ function printUsage() {
 
   Usage:
     aveil-health analyze <export.xml|export.zip>  [options]
+    aveil-health wrapped <export.xml|export.zip>  [options]
     aveil-health mcp                               Start MCP server (stdio)
 
   Options:
@@ -32,6 +34,7 @@ function printUsage() {
     aveil-health analyze ~/Desktop/export.xml
     aveil-health analyze export.zip --days 14
     aveil-health analyze export.xml --json > report.json
+    aveil-health wrapped export.zip --open
 
   MCP Server:
     Set AVEIL_HEALTH_EXPORT=/path/to/export.xml then:
@@ -55,8 +58,8 @@ async function main() {
     return;
   }
 
-  if (command !== "analyze") {
-    console.error(`Unknown command: ${command}. Use "analyze" or "mcp".`);
+  if (command !== "analyze" && command !== "wrapped") {
+    console.error(`Unknown command: ${command}. Use "analyze", "wrapped", or "mcp".`);
     printUsage();
     process.exit(1);
   }
@@ -104,7 +107,21 @@ async function main() {
 
   const report = analyze(data);
 
-  if (jsonOutput) {
+  if (command === "wrapped") {
+    const outputIdx = args.indexOf("--output");
+    const { html, filename } = generateWrappedHTML(report);
+    const outPath = resolve(outputIdx !== -1 ? args[outputIdx + 1] : filename);
+    writeFileSync(outPath, html);
+    console.log(`\n  ✨ Card saved to ${outPath}`);
+    console.log(`  Open in browser to screenshot and share!\n`);
+    if (args.includes("--open")) {
+      try {
+        execSync(`open "${outPath}"`, { stdio: "ignore" });
+      } catch {
+        try { execSync(`xdg-open "${outPath}"`, { stdio: "ignore" }); } catch { /* ignore */ }
+      }
+    }
+  } else if (jsonOutput) {
     console.log(formatJSON(report));
   } else {
     console.log(formatReport(report));
