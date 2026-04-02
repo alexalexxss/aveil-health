@@ -54,7 +54,7 @@ function getBenchmark(category, value) {
 }
 
 /**
- * Compute a fun health identity based on analysis patterns.
+ * Compute health identity with evidence (Archer: identity + proof is the shareable unit).
  */
 export function computeHealthIdentity(report) {
   const s = report.sleep;
@@ -62,20 +62,119 @@ export function computeHealthIdentity(report) {
   const a = report.activity;
   const score = report.overall?.score ?? 0;
 
-  if (score > 85)
-    return { title: "The Optimizer", tagline: "Dialed in across the board", emoji: "⚡" };
+  if (score > 85) {
+    const proofs = [];
+    if (r?.available && r.averageHRV > 60) proofs.push(`${Math.round(r.averageHRV)}ms HRV`);
+    if (s?.available && s.averages?.bedtimeVariability < 0.5) proofs.push(`±${Math.round(s.averages.bedtimeVariability * 60)}min bedtime drift`);
+    if (a?.available && a.averages?.stepsPerDay > 10000) proofs.push(`${(a.averages.stepsPerDay / 1000).toFixed(1)}K steps/day`);
+    return { title: "The Optimizer", tagline: proofs.length ? proofs.join(" · ") : "Dialed in across the board", emoji: "⚡" };
+  }
   if (s?.available && s.averages?.bedtimeHour < 22 && s.averages?.bedtimeVariability < 0.5)
-    return { title: "The Disciplined", tagline: "Routine is your superpower", emoji: "🎯" };
+    return { title: "The Clockwork Sleeper", tagline: `Median bedtime drift ±${Math.round(s.averages.bedtimeVariability * 60)}min`, emoji: "🎯" };
   if (r?.available && r.averageHRV > 80)
-    return { title: "The Recovered", tagline: "Your nervous system is thriving", emoji: "🧘" };
+    return { title: "The Recovered", tagline: `Avg HRV ${Math.round(r.averageHRV)}ms — nervous system thriving`, emoji: "🧘" };
   if (a?.available && a.averages?.stepsPerDay > 12000)
-    return { title: "The Mover", tagline: "Built for momentum", emoji: "🏃" };
+    return { title: "The Mover", tagline: `${(a.averages.stepsPerDay / 1000).toFixed(1)}K steps/day avg`, emoji: "🏃" };
   if (s?.available && s.averages?.deepMinutes > 60)
-    return { title: "The Deep Sleeper", tagline: "Quality rest, deep recovery", emoji: "🌙" };
+    return { title: "The Deep Sleeper", tagline: `${Math.round(s.averages.deepMinutes)}min avg deep sleep`, emoji: "🌙" };
   if (s?.available && s.averages?.bedtimeHour >= 24)
     return { title: "The Night Owl", tagline: "Late nights, your own rhythm", emoji: "🦉" };
 
   return { title: "The Tracker", tagline: "Measuring what matters", emoji: "📊" };
+}
+
+/**
+ * Pick the single most impressive metric as a hero boast line.
+ * This is the one thing someone would screenshot and share.
+ */
+export function computeHeroBoast(report, comparisons) {
+  const candidates = [];
+
+  // Best percentile from comparisons
+  for (const c of comparisons) {
+    const pctMatch = c.pct.match(/(\d+)/);
+    if (pctMatch) {
+      const num = parseInt(pctMatch[1]);
+      // Lower "top X%" = more impressive
+      if (c.pct.startsWith("top")) {
+        candidates.push({ text: `${c.pct} ${c.metric}`, impressiveness: 100 - num, value: c.value });
+      }
+    }
+  }
+
+  // Steps as distance
+  if (report.activity?.available && report.activity.averages?.stepsPerDay) {
+    const totalDays = report.activity.totalDays || 30;
+    const totalSteps = report.activity.averages.stepsPerDay * totalDays;
+    const km = totalSteps * 0.000762; // ~0.762m per step
+    if (km > 500) {
+      candidates.push({ text: `Walked ${Math.round(km).toLocaleString()}km this year`, impressiveness: 70, value: `${Math.round(km)}km` });
+    }
+  }
+
+  // High-recovery days
+  if (report.recovery?.available && report.recovery.recoveryScore >= 70) {
+    candidates.push({ text: `Recovery score: ${report.recovery.recoveryScore}`, impressiveness: 50, value: `${report.recovery.recoveryScore}` });
+  }
+
+  candidates.sort((a, b) => b.impressiveness - a.impressiveness);
+  return candidates[0] || null;
+}
+
+/**
+ * Compute a surprising derived stat the user didn't know.
+ * This is the conversation-starter.
+ */
+export function computeDerivedStat(report) {
+  const stats = [];
+
+  // Bedtime inconsistency → estimated sleep cost
+  if (report.sleep?.available && report.sleep.averages?.bedtimeVariability != null) {
+    const varMin = report.sleep.averages.bedtimeVariability * 60;
+    if (varMin > 30) {
+      // Research: each 30min of social jetlag costs ~15min of effective sleep
+      const daysAnalyzed = report.sleep.nightsAnalyzed || 14;
+      const costPerNight = (varMin / 30) * 15; // minutes lost per night
+      const totalCost = Math.round(costPerNight * daysAnalyzed / 60);
+      if (totalCost > 2) {
+        stats.push({ text: `Your bedtime inconsistency likely cost ~${totalCost} hours of effective sleep`, impact: totalCost });
+      }
+    }
+  }
+
+  // Steps → distance equivalent
+  if (report.activity?.available && report.activity.averages?.stepsPerDay) {
+    const totalDays = report.activity.totalDays || 30;
+    const totalSteps = report.activity.averages.stepsPerDay * totalDays;
+    const km = totalSteps * 0.000762;
+    // Find a fun city-to-city distance
+    const distances = [
+      { route: "New York → Los Angeles", km: 3944 },
+      { route: "London → Istanbul", km: 2500 },
+      { route: "Tokyo → Seoul", km: 1160 },
+      { route: "San Francisco → LA", km: 615 },
+      { route: "Paris → Amsterdam", km: 430 },
+      { route: "Boston → NYC", km: 306 },
+    ];
+    for (const d of distances) {
+      if (km >= d.km * 0.85) {
+        stats.push({ text: `You walked the equivalent of ${d.route} (${Math.round(km).toLocaleString()}km)`, impact: km / 100 });
+        break;
+      }
+    }
+  }
+
+  // Deep sleep hours over period
+  if (report.sleep?.available && report.sleep.averages?.deepMinutes > 0) {
+    const nights = report.sleep.nightsAnalyzed || 14;
+    const totalDeepHours = Math.round(report.sleep.averages.deepMinutes * nights / 60);
+    if (totalDeepHours > 10) {
+      stats.push({ text: `${totalDeepHours} hours in deep sleep — when your body actually repairs`, impact: totalDeepHours / 5 });
+    }
+  }
+
+  stats.sort((a, b) => b.impact - a.impact);
+  return stats[0] || null;
 }
 
 /**
@@ -265,6 +364,8 @@ export function generateWrappedHTML(report, options = {}) {
   const surprising = computeSurprisingStats(report);
   const comparisons = computeComparisons(report);
   const insights = generateWrappedInsights(report);
+  const heroBoast = computeHeroBoast(report, comparisons);
+  const derivedStat = computeDerivedStat(report);
   const score = report.overall?.score ?? 0;
   const pct = Math.min(100, Math.max(0, score));
   const color = scoreColor(score);
@@ -330,6 +431,10 @@ body{background:#0a0a0f;color:#e2e8f0;font-family:Inter,-apple-system,BlinkMacSy
 .identity-emoji{font-size:32px}
 .identity-title{font-size:22px;font-weight:700;color:#f1f5f9;margin:4px 0}
 .identity-tagline{font-size:13px;color:#7c3aed;font-style:italic}
+.hero-boast{text-align:center;margin-bottom:24px}
+.hero-boast-text{display:inline-block;font-size:15px;font-weight:700;color:#f1f5f9;background:linear-gradient(135deg,rgba(124,58,237,0.15),rgba(34,197,94,0.1));border:1px solid rgba(124,58,237,0.25);border-radius:12px;padding:10px 20px;letter-spacing:0.5px}
+.derived-stat{text-align:center;margin-bottom:24px;padding:14px 20px;background:rgba(124,58,237,0.06);border:1px solid rgba(124,58,237,0.12);border-radius:14px}
+.derived-stat-text{font-size:14px;color:#c4b5fd;font-weight:500;line-height:1.5;font-style:italic}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:24px}
 .grid-item{background:rgba(124,58,237,0.06);border:1px solid rgba(124,58,237,0.12);border-radius:12px;padding:14px 16px}
 .grid-label{font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:#7c3aed;margin-bottom:4px}
@@ -386,6 +491,10 @@ body{background:#0a0a0f;color:#e2e8f0;font-family:Inter,-apple-system,BlinkMacSy
     <div class="identity-tagline">${escapeHtml(identity.tagline)}</div>
   </div>
 
+  ${heroBoast ? `<div class="hero-boast">
+    <div class="hero-boast-text">${escapeHtml(heroBoast.text)}</div>
+  </div>` : ""}
+
   ${gridItems.length ? `<div class="grid">${gridItems.map((g) => `
     <div class="grid-item">
       <div class="grid-label">${escapeHtml(g.label)}</div>
@@ -427,12 +536,16 @@ body{background:#0a0a0f;color:#e2e8f0;font-family:Inter,-apple-system,BlinkMacSy
     </div>`).join("")}
   </div>` : ""}
 
+  ${derivedStat ? `<div class="derived-stat">
+    <div class="derived-stat-text">${escapeHtml(derivedStat.text)}</div>
+  </div>` : ""}
+
   <div class="footer">
+    <div class="footer-privacy">🔒 100% local · zero uploads · open source</div>
     <div class="footer-brand">Generated with aveil-health · aveilx.com</div>
     <div class="footer-compat">Works with Claude Code · Local Models · Codex · OpenClaw</div>
     <div class="footer-mcp">🔌 MCP Server Available</div>
     <div class="footer-github">github.com/alexalexxss/aveil-health</div>
-    <div class="footer-privacy">100% local · zero uploads · open source</div>
   </div>
 </div>
 </body>
