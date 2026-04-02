@@ -1,33 +1,55 @@
 # aveil-health
 
-Private, local Apple Health analysis in your terminal. No uploads, no accounts, no cloud.
+Your Apple Health data, analyzed locally. No accounts, no cloud, no BS.
 
-Turn your Apple Health export into actionable signals on sleep, recovery, activity, and nutrition — everything stays on your machine.
+One command turns your Apple Health export into a clear report — sleep stages, recovery readiness, activity trends, nutrition signals. Everything runs on your machine. Nothing leaves it.
 
-## Share Your Health
+## Health Wrapped
 
-Generate a beautiful, shareable health card:
+Generate a shareable health card (think Spotify Wrapped, but for your body):
 
 ```bash
 npx aveil-health wrapped export.zip
 ```
 
-Creates a stunning dark-mode card you can screenshot and share — score ring, health identity, stats, signals. Opens in your browser.
+Opens a dark-mode card in your browser with your score, health identity, stats, and signals. Screenshot it, share it, flex on your friends.
 
-## Quick Start
+## Get Started
+
+### 1. Export your Apple Health data
+
+On your iPhone:
+
+1. Open the **Health** app
+2. Tap your **profile picture** (top right)
+3. Scroll down → **Export All Health Data**
+4. Tap **Export** (this takes a minute — it's zipping everything)
+5. AirDrop or save the `.zip` to your computer
+
+> The file can be 50–500MB+ depending on how long you've had an Apple Watch. That's fine — the parser streams through it without loading everything into memory.
+
+### 2. Run it
 
 ```bash
-# Analyze your Apple Health export (zip or xml)
+# Full analysis
 npx aveil-health analyze export.zip
 
-# Last 14 days only
+# Just the last 2 weeks
 npx aveil-health analyze export.xml --days 14
 
-# JSON output (pipe to jq, save, or feed to other tools)
+# JSON output (pipe to jq, save, feed to other tools)
 npx aveil-health analyze export.xml --json > report.json
+
+# Wrapped card
+npx aveil-health wrapped export.zip
+
+# Generate demo cards for all archetypes
+npx aveil-health demo
 ```
 
-## Example Output
+That's it. No install, no config, no signup.
+
+## What you get
 
 ```
   ▲ AVEIL  Health Analysis
@@ -60,88 +82,39 @@ npx aveil-health analyze export.xml --json > report.json
 
   ■ SIGNALS
   ✅ Sleep: 7.2h (good)
-     Deep 87m · REM 111m · Core 231m
      → Sleep looks solid — maintain current routine
 
   ✅ Recovery: 74/100 (good)
-     HRV 120ms (avg 109.5ms) · RHR 49bpm
      → Good to push — recovery supports hard training today
 
   ─────────────────────────────────────
   77,186 records analyzed
-  aveilx.com — health signals you can act on
+  aveilx.com
 ```
-
-## What It Analyzes
-
-| Domain | Metrics | Source |
-|--------|---------|--------|
-| **Sleep** | Duration, deep/REM/core stages, bedtime consistency, trends | Apple Watch |
-| **Recovery** | HRV-based readiness score, resting heart rate, sleep factor | Apple Watch |
-| **Activity** | Steps, active energy, recent workouts, trends | iPhone + Watch |
-| **Nutrition** | Calories, protein (if tracked in Apple Health) | Manual or apps |
-| **Signals** | Actionable next steps based on all domains | Computed |
-
-## How to Export Your Data
-
-1. Open the **Health** app on your iPhone
-2. Tap your **profile picture** (top right)
-3. Scroll down → **Export All Health Data**
-4. Tap **Export**
-5. AirDrop or save the `.zip` file to your computer
-
-The export can be large (50–500MB depending on how long you've had an Apple Watch). That's fine — the parser streams through it without loading everything into memory.
-
-## Options
-
-```
-Usage: aveil-health analyze <export.xml | export.zip> [options]
-
-Options:
-  --days <n>    Number of recent days to analyze (default: 30)
-  --json        Output as JSON instead of formatted report
-  --help        Show help
-```
-
-## How It Works
-
-1. **Parses** your Apple Health XML export using a streaming SAX parser (handles multi-GB files)
-2. **Extracts** sleep sessions, heart rate, HRV, steps, workouts, nutrition, and more
-3. **Analyzes** each domain with deterministic scoring (no AI/LLM calls, no network)
-4. **Generates signals** — concrete, actionable observations based on your real data
-5. **Outputs** a clean terminal report or structured JSON
 
 ## Signals
 
-Signals are the core output — not just dashboards, but specific observations with next steps:
+Signals are the point — not dashboards, but concrete observations with next steps:
 
 - **Sleep quality** — duration + stage breakdown + what to change
-- **Deep sleep deficit** — triggered when your average deep sleep is below 45 minutes
-- **Recovery readiness** — HRV-based score that tells you whether to push or rest
-- **Activity alerts** — flagged when daily steps fall below health thresholds
-- **Protein lag** — triggered when tracked protein intake is below recommended levels
+- **Deep sleep deficit** — when your deep sleep average drops below 45 min
+- **Recovery readiness** — HRV-based, tells you to push or rest
+- **Activity alerts** — when daily movement drops below health thresholds
+- **Protein lag** — when tracked protein falls short
 
-Each signal includes a severity level (`positive` / `neutral` / `warning`) and concrete action items.
-
-## Privacy
-
-- **100% local** — your data is parsed and analyzed on your machine
-- **Zero network calls** — no APIs, no telemetry, no uploads, no tracking
-- **No account needed** — just your Apple Health export file
-- **Open source** — read the code, verify the claims
-
-## Requirements
-
-- Node.js 18+
-- An Apple Health export (iPhone required for export; Apple Watch recommended for full data)
+Each signal has a severity (`positive` / `neutral` / `warning`) and a specific action.
 
 ## MCP Server
 
-Use aveil-health as an MCP server inside Claude Code, Cursor, or any MCP-compatible tool.
+Plug your health data into any AI coding tool:
 
-### Setup
+```bash
+# Set your export path, then connect
+export AVEIL_HEALTH_EXPORT="/path/to/export.xml"
+npx aveil-health mcp
+```
 
-Add to your MCP config (e.g. `~/.claude/settings.json` or Cursor MCP settings):
+Add to your MCP config (Claude Code, Cursor, Codex, etc.):
 
 ```json
 {
@@ -157,45 +130,34 @@ Add to your MCP config (e.g. `~/.claude/settings.json` or Cursor MCP settings):
 }
 ```
 
-### Compatible Clients
+Then just ask your agent:
 
-- **Claude Code** — Anthropic's CLI
-- **Cursor** — AI code editor
-- **Codex** — OpenAI's coding agent
-- **OpenClaw** — via mcporter
-- **Windsurf / Cline / VS Code Copilot** — any MCP-compatible client
+- *"How did I sleep last night?"*
+- *"Am I recovered enough to train hard today?"*
+- *"What should I focus on to improve my sleep?"*
 
-### Available Tools
+Available tools: `analyze_health`, `get_sleep_summary`, `get_recovery_status`, `get_activity_summary`, `get_signals`, `get_recommendations`
 
-| Tool | What it does |
-|------|--------------|
-| `analyze_health` | Full health analysis — overall score, all domains, signals |
-| `get_sleep_summary` | Last night + averages + stages + bedtime consistency |
-| `get_recovery_status` | HRV-based readiness — should you push or rest today? |
-| `get_activity_summary` | Steps, energy, workouts, trends |
-| `get_signals` | Actionable observations with severity + next steps |
-| `get_recommendations` | Time-aware suggestions — bedtime reminders, training guidance, focus tips |
+Works with Claude Code, Cursor, Codex, OpenClaw, Windsurf, Cline — anything that speaks MCP.
 
-### Example Prompts
+## Privacy
 
-Once configured, ask your AI coding tool:
+- **100% local** — parsed and analyzed on your machine
+- **Zero network calls** — no APIs, no telemetry, no tracking
+- **No account** — just your export file
+- **Open source** — read the code
 
-- "How did I sleep last night?"
-- "Am I recovered enough to train hard today?"
-- "Give me a health check"
-- "What should I focus on to improve my sleep?"
-- "Any health recommendations right now?"
-- "Should I work out today or rest?"
+## Requirements
 
-All analysis runs locally on your machine. No data is sent anywhere.
+- Node.js 18+
+- Apple Health export (iPhone for export, Apple Watch recommended for full data)
 
 ## Roadmap
 
 - [ ] Trend visualizations (terminal sparklines)
 - [ ] Weekly digest mode
 - [ ] Custom signal thresholds
-- [ ] Garmin / Fitbit / Google Health export support
-- [ ] Watch for file changes (auto-refresh on new exports)
+- [ ] Garmin / Fitbit / Google Health support
 
 ## License
 
@@ -203,4 +165,4 @@ MIT
 
 ---
 
-Built by [@alexalexxss](https://github.com/alexalexxss) · **[aveilx.com](https://aveilx.com)** — Health signals you can act on
+Built by [@alexalexxss](https://github.com/alexalexxss) · [aveilx.com](https://aveilx.com)

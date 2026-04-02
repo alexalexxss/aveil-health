@@ -23,11 +23,13 @@ function printUsage() {
   Usage:
     aveil-health analyze <export.xml|export.zip>  [options]
     aveil-health wrapped <export.xml|export.zip>  [options]
+    aveil-health demo [output-dir]                 Generate demo cards for all archetypes
     aveil-health mcp                               Start MCP server (stdio)
 
   Options:
     --days <n>    Number of recent days to analyze (default: 30)
     --json        Output raw JSON instead of formatted report
+    --period <p>  Wrapped period: yearly, monthly, weekly (default: yearly)
     --help        Show this help message
 
   Examples:
