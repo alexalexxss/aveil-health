@@ -14,6 +14,10 @@ npx aveil-health wrapped export.zip
 
 Opens a dark-mode card in your browser with your score, health identity, stats, and signals.
 
+<p align="center">
+  <img src="assets/wrapped-demo.png" width="360" alt="Health Wrapped card example — The Optimizer" />
+</p>
+
 ## Get Started
 
 ### 1. Export your Apple Health data
