@@ -90,7 +90,7 @@ export function computeHealthIdentity(report) {
     return { title: "Longevity Champion", tagline: "Top 1% isn't luck. Your body, your data, your edge.", icon: ARCHETYPE_ICONS.longevity, elite: true };
   }
   if (score > 85) {
-    return { title: "The Optimizer", tagline: "Score above 85. Most people don't even measure — you're outperforming.", icon: ARCHETYPE_ICONS.optimizer };
+    return { title: "The Optimizer", tagline: "Every metric dialed. You don't guess — you measure, adjust, and win.", icon: ARCHETYPE_ICONS.optimizer };
   }
 
   // --- Tier 2: Elite physiological outcomes (highest status) ---
@@ -115,13 +115,13 @@ export function computeHealthIdentity(report) {
   if (s?.available && s.averages?.durationMinutes > 480)
     return { title: "The Recharger", tagline: "8+ hours every night. Your body recovers while others burn out.", icon: ARCHETYPE_ICONS.recharger };
   if (r?.available && r.averageHRV >= 50 && s?.available && s.averages?.durationMinutes >= 420 && a?.available && a.averages?.stepsPerDay >= 6000)
-    return { title: "The Zen Master", tagline: "Sleep, recovery, movement — all balanced. No weak link in your chain.", icon: ARCHETYPE_ICONS.zenMaster };
+    return { title: "The Zen Master", tagline: "Nothing extreme, nothing neglected. You play the long game across every metric.", icon: ARCHETYPE_ICONS.zenMaster };
 
   // --- Tier 4: Fallback ---
   if (s?.available && s.averages?.bedtimeHour >= 24)
     return { title: "The Night Owl", tagline: "The world sleeps, you create. Late nights are your territory.", icon: ARCHETYPE_ICONS.nightOwl };
 
-  return { title: "The Tracker", tagline: "You measure what most people ignore. That's already an edge.", icon: ARCHETYPE_ICONS.tracker };
+  return { title: "The Tracker", tagline: "Most people never look at their data. You did — and that's where every improvement starts.", icon: ARCHETYPE_ICONS.tracker };
 }
 
 function toTopPercent(pctLabel) {
