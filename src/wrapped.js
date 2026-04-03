@@ -67,7 +67,7 @@ const ARCHETYPE_ICONS = {
   tracker: `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 3v18h18" stroke="#c4b5fd" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M7 16l4-5 4 4 5-7" stroke="#c4b5fd" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
   earlyBird: `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="5" stroke="#c4b5fd" stroke-width="1.5"/><path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" stroke="#c4b5fd" stroke-width="1.5" stroke-linecap="round"/></svg>`,
   ironMind: `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L4 7v6c0 5.25 3.4 10.15 8 11.25 4.6-1.1 8-6 8-11.25V7l-8-5z" stroke="#c4b5fd" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 12l2 2 4-4" stroke="#c4b5fd" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
-  zenMaster: `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="#c4b5fd" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.3"/><circle cx="12" cy="10" r="3" stroke="#c4b5fd" stroke-width="1.5"/><path d="M7 20c0-2.5 2.2-4.5 5-4.5s5 2 5 4.5" stroke="#c4b5fd" stroke-width="1.5" stroke-linecap="round"/></svg>`,
+  zenMaster: `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="9" stroke="#c4b5fd" stroke-width="1.5" opacity="0.3"/><path d="M12 8v4" stroke="#c4b5fd" stroke-width="1.5" stroke-linecap="round"/><path d="M12 12l3 3M12 12l-3 3" stroke="#c4b5fd" stroke-width="1.5" stroke-linecap="round"/><circle cx="12" cy="6" r="1.5" stroke="#c4b5fd" stroke-width="1.5"/></svg>`,
 };
 
 /**
@@ -95,13 +95,13 @@ export function computeHealthIdentity(report) {
     return { title: "The Deep Sleeper", tagline: "While others toss and turn, your brain hits the repair shop every night.", icon: ARCHETYPE_ICONS.deepSleeper };
   if (r?.available && r.averageRHR && r.averageRHR < 55)
     return { title: "The Endurance Engine", tagline: "Resting heart rate of an athlete. Your cardiovascular system was built for distance.", icon: ARCHETYPE_ICONS.endurance };
-  // New: Iron Mind — moderate-good everything, high consistency
-  if (s?.available && s.averages?.bedtimeVariability < 0.6 && score >= 65 && r?.available && r.averageHRV >= 40)
-    return { title: "The Iron Mind", tagline: "Nothing flashy, nothing skipped. Consistency is your unfair advantage.", icon: ARCHETYPE_ICONS.ironMind };
   if (s?.available && s.averages?.durationMinutes > 480)
     return { title: "The Recharger", tagline: "8+ hours isn't lazy — it's strategic. You prioritize recovery like a pro.", icon: ARCHETYPE_ICONS.recharger };
   if (a?.available && a.averages?.activeEnergyPerDay > 600)
     return { title: "The Burner", tagline: "600+ kcal burned daily. Your metabolism runs like it has somewhere to be.", icon: ARCHETYPE_ICONS.burner };
+  // Iron Mind — moderate-good everything, high consistency (after more specific archetypes)
+  if (s?.available && s.averages?.bedtimeVariability < 0.5 && score >= 65 && r?.available && r.averageHRV >= 40)
+    return { title: "The Iron Mind", tagline: "Nothing flashy, nothing skipped. Consistency is your unfair advantage.", icon: ARCHETYPE_ICONS.ironMind };
   // New: Zen Master — good HRV + good sleep + moderate activity (balanced)
   if (r?.available && r.averageHRV >= 50 && s?.available && s.averages?.durationMinutes >= 420 && a?.available && a.averages?.stepsPerDay >= 6000)
     return { title: "The Zen Master", tagline: "Sleep, recovery, movement — all in balance. Your body runs on equilibrium.", icon: ARCHETYPE_ICONS.zenMaster };
@@ -175,15 +175,15 @@ export function computeCalorieEquivalence(report) {
   const totalKcal = Math.round(report.activity.averages.activeEnergyPerDay * days);
   if (totalKcal < 1000) return null;
 
-  // Fun equivalences sorted by kcal threshold (descending)
+  // Fun equivalences sorted by kcal threshold (descending) — varied types
   const equivalences = [
     { min: 500000, text: (k) => `You burned ${k.toLocaleString()} kcal — enough to climb Everest ${(k / 20000).toFixed(0)} times` },
-    { min: 250000, text: (k) => `You burned ${k.toLocaleString()} kcal — enough to run ${Math.round(k / 2600)} marathons` },
-    { min: 100000, text: (k) => `You burned ${k.toLocaleString()} kcal — that's ${(k / 7700).toFixed(1)}kg of pure body fat in energy` },
-    { min: 50000,  text: (k) => `You burned ${k.toLocaleString()} kcal — enough to power a lightbulb for ${Math.round(k * 1.163 / 24)} days` },
-    { min: 25000,  text: (k) => `You burned ${k.toLocaleString()} kcal — equal to running ${Math.round(k / 100)}km` },
+    { min: 250000, text: (k) => `You burned ${k.toLocaleString()} kcal — equivalent to running ${Math.round(k / 2600)} marathons` },
+    { min: 100000, text: (k) => `You burned ${k.toLocaleString()} kcal — equivalent to running ${Math.round(k / 2600)} marathons back to back` },
+    { min: 50000,  text: (k) => `You burned ${k.toLocaleString()} kcal — that's ${(k / 7700).toFixed(1)}kg of pure body fat in energy` },
+    { min: 25000,  text: (k) => `You burned ${k.toLocaleString()} kcal — equivalent to running ${Math.round(k / 2600)} marathons` },
     { min: 10000,  text: (k) => `You burned ${k.toLocaleString()} kcal — enough to melt ${(k / 7700).toFixed(1)}kg of body fat` },
-    { min: 5000,   text: (k) => `You burned ${k.toLocaleString()} kcal — that's ${Math.round(k / 250)} hours of intense cycling` },
+    { min: 5000,   text: (k) => `You burned ${k.toLocaleString()} kcal — equivalent to running ${Math.round(k / 100)}km` },
     { min: 1000,   text: (k) => `You burned ${k.toLocaleString()} kcal — about ${Math.round(k / 100)} 5K runs worth of energy` },
   ];
 
@@ -591,7 +591,7 @@ body{background:#0a0a0f;color:#e2e8f0;font-family:Inter,-apple-system,BlinkMacSy
   </div>` : ""}
 
   ${calorieEq ? `<div class="calorie-eq">
-    <div class="calorie-eq-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 22c4-4 8-7.582 8-12a8 8 0 10-16 0c0 4.418 4 8 8 12z" stroke="#f59e0b" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 13a3 3 0 100-6 3 3 0 000 6z" stroke="#f59e0b" stroke-width="1.5"/></svg></div>
+    <div class="calorie-eq-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 23c-3.2 0-7-1.8-7-6.4 0-3.6 3.2-7.2 5-9.6.4-.5 1-.8 1.6-.8h.8c.6 0 1.2.3 1.6.8 1.8 2.4 5 6 5 9.6 0 4.6-3.8 6.4-7 6.4z" stroke="#f59e0b" stroke-width="1.5" fill="none"/><path d="M12 23c-1.6 0-3.5-.9-3.5-3.2 0-1.8 1.6-3.6 2.5-4.8.2-.2.5-.4.8-.4h.4c.3 0 .6.2.8.4.9 1.2 2.5 3 2.5 4.8 0 2.3-1.9 3.2-3.5 3.2z" fill="#f59e0b" opacity="0.3"/></svg></div>
     <div class="calorie-eq-text">${escapeHtml(calorieEq.text)}</div>
   </div>` : ""}
 
@@ -672,7 +672,7 @@ export function generateDemoCards(outDir) {
     { name: "deep-sleeper", score: 76, sleep: { dur: 470, deep: 80, rem: 90, btHour: 22.0, btVar: 0.5 }, hrv: 60, rhr: 60, steps: 7000, kcal: 480 },
     { name: "endurance-engine", score: 74, sleep: { dur: 420, deep: 55, rem: 75, btHour: 22.5, btVar: 0.6 }, hrv: 65, rhr: 48, steps: 11000, kcal: 780 },
     { name: "iron-mind", score: 71, sleep: { dur: 435, deep: 52, rem: 78, btHour: 22.2, btVar: 0.45 }, hrv: 55, rhr: 63, steps: 8800, kcal: 550 },
-    { name: "recharger", score: 70, sleep: { dur: 510, deep: 65, rem: 100, btHour: 21.0, btVar: 0.4 }, hrv: 58, rhr: 62, steps: 6500, kcal: 450 },
+    { name: "recharger", score: 70, sleep: { dur: 510, deep: 55, rem: 100, btHour: 21.7, btVar: 0.55 }, hrv: 58, rhr: 62, steps: 6500, kcal: 450 },
     { name: "burner", score: 73, sleep: { dur: 410, deep: 48, rem: 72, btHour: 22.8, btVar: 0.55 }, hrv: 52, rhr: 58, steps: 10500, kcal: 920 },
     { name: "zen-master", score: 64, sleep: { dur: 450, deep: 55, rem: 85, btHour: 22.3, btVar: 0.65 }, hrv: 58, rhr: 61, steps: 8500, kcal: 520 },
     { name: "night-owl", score: 62, sleep: { dur: 380, deep: 40, rem: 65, btHour: 24.5, btVar: 0.8 }, hrv: 45, rhr: 68, steps: 6000, kcal: 400 },
