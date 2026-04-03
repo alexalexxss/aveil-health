@@ -53,6 +53,23 @@ function getBenchmark(category, value) {
   return tiers[tiers.length - 1];
 }
 
+// ─── Inline SVG icons (monochrome, 24x24 viewBox) ───
+const ARCHETYPE_ICONS = {
+  optimizer: `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" stroke="#c4b5fd" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  clockwork: `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="9" stroke="#c4b5fd" stroke-width="1.5"/><path d="M12 7v5l3 3" stroke="#c4b5fd" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  recovered: `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" stroke="#c4b5fd" stroke-width="1.5"/><path d="M8 14s1.5 2 4 2 4-2 4-2" stroke="#c4b5fd" stroke-width="1.5" stroke-linecap="round"/><path d="M9 9h.01M15 9h.01" stroke="#c4b5fd" stroke-width="2" stroke-linecap="round"/></svg>`,
+  mover: `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M13 4v7h6" stroke="#c4b5fd" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 20l5-7 3 3 6-8" stroke="#c4b5fd" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  deepSleeper: `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" stroke="#c4b5fd" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  endurance: `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" stroke="#c4b5fd" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  recharger: `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="6" y="7" width="12" height="14" rx="2" stroke="#c4b5fd" stroke-width="1.5"/><path d="M10 3h4" stroke="#c4b5fd" stroke-width="1.5" stroke-linecap="round"/><path d="M12 11v4M10 13h4" stroke="#c4b5fd" stroke-width="1.5" stroke-linecap="round"/></svg>`,
+  burner: `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 22c4-4 8-7.582 8-12a8 8 0 10-16 0c0 4.418 4 8 8 12z" stroke="#c4b5fd" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 13a3 3 0 100-6 3 3 0 000 6z" stroke="#c4b5fd" stroke-width="1.5"/></svg>`,
+  nightOwl: `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="9" cy="10" r="1.5" stroke="#c4b5fd" stroke-width="1.5"/><circle cx="15" cy="10" r="1.5" stroke="#c4b5fd" stroke-width="1.5"/><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" stroke="#c4b5fd" stroke-width="1.5"/><path d="M9 16s1.5 1 3 1 3-1 3-1" stroke="#c4b5fd" stroke-width="1.5" stroke-linecap="round"/><path d="M3 12c2-1 3-3 3-3s1 2 3 3M15 9c2-1 3-3 3-3s1 2 3 3" stroke="#c4b5fd" stroke-width="1" stroke-linecap="round" opacity="0.5"/></svg>`,
+  tracker: `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 3v18h18" stroke="#c4b5fd" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M7 16l4-5 4 4 5-7" stroke="#c4b5fd" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  earlyBird: `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="5" stroke="#c4b5fd" stroke-width="1.5"/><path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" stroke="#c4b5fd" stroke-width="1.5" stroke-linecap="round"/></svg>`,
+  ironMind: `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L4 7v6c0 5.25 3.4 10.15 8 11.25 4.6-1.1 8-6 8-11.25V7l-8-5z" stroke="#c4b5fd" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 12l2 2 4-4" stroke="#c4b5fd" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  zenMaster: `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="#c4b5fd" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.3"/><circle cx="12" cy="10" r="3" stroke="#c4b5fd" stroke-width="1.5"/><path d="M7 20c0-2.5 2.2-4.5 5-4.5s5 2 5 4.5" stroke="#c4b5fd" stroke-width="1.5" stroke-linecap="round"/></svg>`,
+};
+
 /**
  * Compute health identity with evidence (Archer: identity + proof is the shareable unit).
  */
@@ -63,26 +80,35 @@ export function computeHealthIdentity(report) {
   const score = report.overall?.score ?? 0;
 
   if (score > 85) {
-    return { title: "The Optimizer", tagline: "You treat your body like a system — and the data proves it's working", emoji: "⚡" };
+    return { title: "The Optimizer", tagline: "Your body is a system. The numbers say it's dialed in.", icon: ARCHETYPE_ICONS.optimizer };
   }
+  // Early Bird before Clockwork — more specific (beds before 21:30)
+  if (s?.available && s.averages?.bedtimeHour < 21.5 && s.averages?.durationMinutes >= 360)
+    return { title: "The Early Bird", tagline: "Asleep before most people finish dinner. The morning belongs to you.", icon: ARCHETYPE_ICONS.earlyBird };
   if (s?.available && s.averages?.bedtimeHour < 22 && s.averages?.bedtimeVariability < 0.5)
-    return { title: "The Clockwork Sleeper", tagline: "Your circadian rhythm runs on rails — consistency is your edge", emoji: "🎯" };
+    return { title: "The Clockwork", tagline: "Same time, every night. Your circadian rhythm doesn't negotiate.", icon: ARCHETYPE_ICONS.clockwork };
   if (r?.available && r.averageHRV > 80)
-    return { title: "The Recovered", tagline: "Your nervous system bounces back faster than most — keep protecting it", emoji: "🧘" };
+    return { title: "The Recovered", tagline: "Your nervous system recovers like it's being paid to. Most people wish.", icon: ARCHETYPE_ICONS.recovered };
   if (a?.available && a.averages?.stepsPerDay > 12000)
-    return { title: "The Mover", tagline: "You outpace most people without thinking about it — movement is your default", emoji: "🏃" };
+    return { title: "The Mover", tagline: "12K+ steps is your baseline. Some people call that a hike.", icon: ARCHETYPE_ICONS.mover };
   if (s?.available && s.averages?.deepMinutes > 60)
-    return { title: "The Deep Sleeper", tagline: "You spend more time in deep sleep than most — your body repairs while others toss and turn", emoji: "🌙" };
+    return { title: "The Deep Sleeper", tagline: "While others toss and turn, your brain hits the repair shop every night.", icon: ARCHETYPE_ICONS.deepSleeper };
   if (r?.available && r.averageRHR && r.averageRHR < 55)
-    return { title: "The Endurance Engine", tagline: "Your resting heart rate says athlete — your cardiovascular system is built for the long game", emoji: "❤️" };
+    return { title: "The Endurance Engine", tagline: "Resting heart rate of an athlete. Your cardiovascular system was built for distance.", icon: ARCHETYPE_ICONS.endurance };
+  // New: Iron Mind — moderate-good everything, high consistency
+  if (s?.available && s.averages?.bedtimeVariability < 0.6 && score >= 65 && r?.available && r.averageHRV >= 40)
+    return { title: "The Iron Mind", tagline: "Nothing flashy, nothing skipped. Consistency is your unfair advantage.", icon: ARCHETYPE_ICONS.ironMind };
   if (s?.available && s.averages?.durationMinutes > 480)
-    return { title: "The Recharger", tagline: "You prioritize recovery over hustle — and your body thanks you for it", emoji: "🔋" };
+    return { title: "The Recharger", tagline: "8+ hours isn't lazy — it's strategic. You prioritize recovery like a pro.", icon: ARCHETYPE_ICONS.recharger };
   if (a?.available && a.averages?.activeEnergyPerDay > 600)
-    return { title: "The Burner", tagline: "High energy output is your baseline — you run hot and recover to match", emoji: "🔥" };
+    return { title: "The Burner", tagline: "600+ kcal burned daily. Your metabolism runs like it has somewhere to be.", icon: ARCHETYPE_ICONS.burner };
+  // New: Zen Master — good HRV + good sleep + moderate activity (balanced)
+  if (r?.available && r.averageHRV >= 50 && s?.available && s.averages?.durationMinutes >= 420 && a?.available && a.averages?.stepsPerDay >= 6000)
+    return { title: "The Zen Master", tagline: "Sleep, recovery, movement — all in balance. Your body runs on equilibrium.", icon: ARCHETYPE_ICONS.zenMaster };
   if (s?.available && s.averages?.bedtimeHour >= 24)
-    return { title: "The Night Owl", tagline: "Late nights are your canvas — you've built your own rhythm", emoji: "🦉" };
+    return { title: "The Night Owl", tagline: "The world sleeps, you create. Late nights are your competitive edge.", icon: ARCHETYPE_ICONS.nightOwl };
 
-  return { title: "The Tracker", tagline: "You measure what matters — that alone puts you ahead", emoji: "📊" };
+  return { title: "The Tracker", tagline: "You measure what matters. That alone puts you ahead of 90%.", icon: ARCHETYPE_ICONS.tracker };
 }
 
 /**
@@ -104,13 +130,29 @@ export function computeHeroBoast(report, comparisons) {
     }
   }
 
-  // Steps as distance
+  // Steps as distance — with fun city-to-city comparisons
   if (report.activity?.available && report.activity.averages?.stepsPerDay) {
     const totalDays = report.activity.totalDays || 30;
     const totalSteps = report.activity.averages.stepsPerDay * totalDays;
     const km = totalSteps * 0.000762; // ~0.762m per step
-    if (km > 500) {
-      candidates.push({ text: `Walked ${Math.round(km).toLocaleString()}km this year`, impressiveness: 70, value: `${Math.round(km)}km` });
+    if (km > 100) {
+      const routes = [
+        { km: 3944, route: "New York → Los Angeles" },
+        { km: 2500, route: "London → Istanbul" },
+        { km: 1160, route: "Tokyo → Seoul" },
+        { km: 615,  route: "San Francisco → LA" },
+        { km: 430,  route: "Paris → Amsterdam" },
+        { km: 306,  route: "Boston → NYC" },
+        { km: 150,  route: "London → Birmingham" },
+      ];
+      let bestRoute = null;
+      for (const r of routes) {
+        if (km >= r.km * 0.85) { bestRoute = r; break; }
+      }
+      const label = bestRoute
+        ? `Walked ${Math.round(km).toLocaleString()}km — the distance from ${bestRoute.route}`
+        : `Walked ${Math.round(km).toLocaleString()}km`;
+      candidates.push({ text: label, impressiveness: Math.min(85, 40 + km / 50), value: `${Math.round(km)}km` });
     }
   }
 
@@ -121,6 +163,34 @@ export function computeHeroBoast(report, comparisons) {
 
   candidates.sort((a, b) => b.impressiveness - a.impressiveness);
   return candidates[0] || null;
+}
+
+/**
+ * Compute a fun calorie equivalence — "you burned X, that's enough to..."
+ * This is the shareable flex line.
+ */
+export function computeCalorieEquivalence(report) {
+  if (!report.activity?.available || !report.activity.averages?.activeEnergyPerDay) return null;
+  const days = report.activity.totalDays || report.activity.daysAnalyzed || 30;
+  const totalKcal = Math.round(report.activity.averages.activeEnergyPerDay * days);
+  if (totalKcal < 1000) return null;
+
+  // Fun equivalences sorted by kcal threshold (descending)
+  const equivalences = [
+    { min: 500000, text: (k) => `You burned ${k.toLocaleString()} kcal — enough to climb Everest ${(k / 20000).toFixed(0)} times` },
+    { min: 250000, text: (k) => `You burned ${k.toLocaleString()} kcal — enough to run ${Math.round(k / 2600)} marathons` },
+    { min: 100000, text: (k) => `You burned ${k.toLocaleString()} kcal — that's ${(k / 7700).toFixed(1)}kg of pure body fat in energy` },
+    { min: 50000,  text: (k) => `You burned ${k.toLocaleString()} kcal — enough to power a lightbulb for ${Math.round(k * 1.163 / 24)} days` },
+    { min: 25000,  text: (k) => `You burned ${k.toLocaleString()} kcal — equal to running ${Math.round(k / 100)}km` },
+    { min: 10000,  text: (k) => `You burned ${k.toLocaleString()} kcal — enough to melt ${(k / 7700).toFixed(1)}kg of body fat` },
+    { min: 5000,   text: (k) => `You burned ${k.toLocaleString()} kcal — that's ${Math.round(k / 250)} hours of intense cycling` },
+    { min: 1000,   text: (k) => `You burned ${k.toLocaleString()} kcal — about ${Math.round(k / 100)} 5K runs worth of energy` },
+  ];
+
+  for (const eq of equivalences) {
+    if (totalKcal >= eq.min) return { text: eq.text(totalKcal), totalKcal };
+  }
+  return { text: `You burned ${totalKcal.toLocaleString()} kcal`, totalKcal };
 }
 
 /**
@@ -376,7 +446,12 @@ export function generateWrappedHTML(report, options = {}) {
   const comparisons = computeComparisons(report);
   const insights = generateWrappedInsights(report);
   const heroBoast = computeHeroBoast(report, comparisons);
-  const derivedStat = computeDerivedStat(report);
+  const calorieEq = computeCalorieEquivalence(report);
+  // Derive stat — skip walking distance if hero boast already shows it
+  let derivedStat = computeDerivedStat(report);
+  if (derivedStat && heroBoast && derivedStat.text.includes('walked') && heroBoast.text.includes('km')) {
+    derivedStat = null; // avoid duplicate walking distance lines
+  }
   const score = report.overall?.score ?? 0;
   const pct = Math.min(100, Math.max(0, score));
   const color = scoreColor(score);
@@ -439,7 +514,7 @@ body{background:#0a0a0f;color:#e2e8f0;font-family:Inter,-apple-system,BlinkMacSy
 .score-num{font-size:36px;font-weight:800;color:${color}}
 .score-label{font-size:11px;color:#64748b;margin-top:2px}
 .identity{text-align:center;margin-bottom:28px}
-.identity-emoji{font-size:32px}
+.identity-icon{margin-bottom:4px;display:flex;justify-content:center;align-items:center}
 .identity-title{font-size:22px;font-weight:700;color:#f1f5f9;margin:4px 0}
 .identity-tagline{font-size:13px;color:#7c3aed;font-style:italic}
 .hero-boast{text-align:center;margin-bottom:24px}
@@ -478,6 +553,9 @@ body{background:#0a0a0f;color:#e2e8f0;font-family:Inter,-apple-system,BlinkMacSy
 .footer-compat{font-size:11px;color:#7c3aed;margin-bottom:4px}
 .footer-mcp{display:inline-block;font-size:10px;color:#22c55e;background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.2);border-radius:6px;padding:2px 8px;margin:6px 0}
 .footer-github{font-size:11px;color:#475569;margin-top:6px}
+.calorie-eq{display:flex;align-items:center;gap:10px;justify-content:center;margin-bottom:24px;padding:12px 20px;background:linear-gradient(135deg,rgba(245,158,11,0.08),rgba(245,158,11,0.02));border:1px solid rgba(245,158,11,0.18);border-radius:14px}
+.calorie-eq-icon{flex-shrink:0;display:flex;align-items:center}
+.calorie-eq-text{font-size:13px;color:#fbbf24;font-weight:600;line-height:1.4}
 .header-privacy{font-size:10px;color:#475569;letter-spacing:0.5px;margin-top:4px}
 </style>
 </head>
@@ -499,7 +577,7 @@ body{background:#0a0a0f;color:#e2e8f0;font-family:Inter,-apple-system,BlinkMacSy
   </div>
 
   <div class="identity">
-    <div class="identity-emoji">${identity.emoji}</div>
+    <div class="identity-icon">${identity.icon}</div>
     <div class="identity-title">${escapeHtml(identity.title)}</div>
     <div class="identity-tagline">${escapeHtml(identity.tagline)}</div>
   </div>
@@ -510,6 +588,11 @@ body{background:#0a0a0f;color:#e2e8f0;font-family:Inter,-apple-system,BlinkMacSy
 
   ${derivedStat ? `<div class="derived-stat">
     <div class="derived-stat-text">${escapeHtml(derivedStat.text)}</div>
+  </div>` : ""}
+
+  ${calorieEq ? `<div class="calorie-eq">
+    <div class="calorie-eq-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 22c4-4 8-7.582 8-12a8 8 0 10-16 0c0 4.418 4 8 8 12z" stroke="#f59e0b" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 13a3 3 0 100-6 3 3 0 000 6z" stroke="#f59e0b" stroke-width="1.5"/></svg></div>
+    <div class="calorie-eq-text">${escapeHtml(calorieEq.text)}</div>
   </div>` : ""}
 
   ${gridItems.length ? `<div class="grid">${gridItems.map((g) => `
@@ -582,13 +665,16 @@ export function generateDemoCards(outDir) {
 
   const demos = [
     { name: "optimizer", score: 88, sleep: { dur: 465, deep: 72, rem: 95, btHour: 21.5, btVar: 0.3 }, hrv: 110, rhr: 48, steps: 13900, kcal: 850 },
-    { name: "clockwork-sleeper", score: 75, sleep: { dur: 440, deep: 55, rem: 80, btHour: 21.8, btVar: 0.25 }, hrv: 55, rhr: 62, steps: 8500, kcal: 520 },
+    { name: "clockwork", score: 75, sleep: { dur: 440, deep: 55, rem: 80, btHour: 21.6, btVar: 0.25 }, hrv: 55, rhr: 62, steps: 8500, kcal: 520 },
     { name: "recovered", score: 78, sleep: { dur: 430, deep: 50, rem: 85, btHour: 22.5, btVar: 0.6 }, hrv: 95, rhr: 56, steps: 9200, kcal: 600 },
     { name: "mover", score: 72, sleep: { dur: 400, deep: 45, rem: 70, btHour: 23.0, btVar: 0.7 }, hrv: 50, rhr: 65, steps: 15000, kcal: 920 },
+    { name: "early-bird", score: 77, sleep: { dur: 420, deep: 58, rem: 82, btHour: 21.0, btVar: 0.35 }, hrv: 62, rhr: 58, steps: 10200, kcal: 680 },
     { name: "deep-sleeper", score: 76, sleep: { dur: 470, deep: 80, rem: 90, btHour: 22.0, btVar: 0.5 }, hrv: 60, rhr: 60, steps: 7000, kcal: 480 },
     { name: "endurance-engine", score: 74, sleep: { dur: 420, deep: 55, rem: 75, btHour: 22.5, btVar: 0.6 }, hrv: 65, rhr: 48, steps: 11000, kcal: 780 },
+    { name: "iron-mind", score: 71, sleep: { dur: 435, deep: 52, rem: 78, btHour: 22.2, btVar: 0.45 }, hrv: 55, rhr: 63, steps: 8800, kcal: 550 },
     { name: "recharger", score: 70, sleep: { dur: 510, deep: 65, rem: 100, btHour: 21.0, btVar: 0.4 }, hrv: 58, rhr: 62, steps: 6500, kcal: 450 },
     { name: "burner", score: 73, sleep: { dur: 410, deep: 48, rem: 72, btHour: 22.8, btVar: 0.55 }, hrv: 52, rhr: 58, steps: 10500, kcal: 920 },
+    { name: "zen-master", score: 64, sleep: { dur: 450, deep: 55, rem: 85, btHour: 22.3, btVar: 0.65 }, hrv: 58, rhr: 61, steps: 8500, kcal: 520 },
     { name: "night-owl", score: 62, sleep: { dur: 380, deep: 40, rem: 65, btHour: 24.5, btVar: 0.8 }, hrv: 45, rhr: 68, steps: 6000, kcal: 400 },
     { name: "tracker", score: 55, sleep: { dur: 390, deep: 35, rem: 60, btHour: 23.5, btVar: 1.0 }, hrv: 40, rhr: 72, steps: 5500, kcal: 350 },
   ];
