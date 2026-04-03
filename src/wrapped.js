@@ -67,7 +67,7 @@ const ARCHETYPE_ICONS = {
   tracker: `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 3v18h18" stroke="#c4b5fd" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M7 16l4-5 4 4 5-7" stroke="#c4b5fd" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
   earlyBird: `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="5" stroke="#c4b5fd" stroke-width="1.5"/><path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" stroke="#c4b5fd" stroke-width="1.5" stroke-linecap="round"/></svg>`,
   ironMind: `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L4 7v6c0 5.25 3.4 10.15 8 11.25 4.6-1.1 8-6 8-11.25V7l-8-5z" stroke="#c4b5fd" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 12l2 2 4-4" stroke="#c4b5fd" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
-  zenMaster: `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="9" stroke="#c4b5fd" stroke-width="1.5" opacity="0.3"/><path d="M12 8v4" stroke="#c4b5fd" stroke-width="1.5" stroke-linecap="round"/><path d="M12 12l3 3M12 12l-3 3" stroke="#c4b5fd" stroke-width="1.5" stroke-linecap="round"/><circle cx="12" cy="6" r="1.5" stroke="#c4b5fd" stroke-width="1.5"/></svg>`,
+  zenMaster: `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="9" stroke="#c4b5fd" stroke-width="1.7" opacity="0.28"/><path d="M12 5.8L13.9 10.1L18.2 12L13.9 13.9L12 18.2L10.1 13.9L5.8 12L10.1 10.1L12 5.8Z" stroke="#c4b5fd" stroke-width="1.7" stroke-linejoin="round"/><circle cx="12" cy="12" r="1.6" fill="#c4b5fd"/></svg>`,
 };
 
 /**
@@ -111,58 +111,73 @@ export function computeHealthIdentity(report) {
   return { title: "The Tracker", tagline: "You measure what matters. That alone puts you ahead of 90%.", icon: ARCHETYPE_ICONS.tracker };
 }
 
+function toTopPercent(pctLabel) {
+  if (!pctLabel) return null;
+  const lower = pctLabel.toLowerCase();
+  if (lower.startsWith("top")) {
+    const m = lower.match(/top\s+(\d+)/);
+    return m ? parseInt(m[1], 10) : null;
+  }
+  const percentileMatch = lower.match(/(\d+)(?:st|nd|rd|th) percentile/);
+  if (percentileMatch) {
+    const pct = parseInt(percentileMatch[1], 10);
+    return Math.max(1, 100 - pct);
+  }
+  return null;
+}
+
 /**
- * Pick the single most impressive metric as a hero boast line.
- * This is the one thing someone would screenshot and share.
+ * Pick the single most impressive percentile-based flex.
+ * Keep this structurally consistent across all cards.
  */
 export function computeHeroBoast(report, comparisons) {
   const candidates = [];
 
-  // Best percentile from comparisons
   for (const c of comparisons) {
-    const pctMatch = c.pct.match(/(\d+)/);
-    if (pctMatch) {
-      const num = parseInt(pctMatch[1]);
-      // Lower "top X%" = more impressive
-      if (c.pct.startsWith("top")) {
-        candidates.push({ text: `${c.pct} ${c.metric}`, impressiveness: 100 - num, value: c.value });
-      }
+    const topPct = toTopPercent(c.pct);
+    if (topPct != null) {
+      candidates.push({
+        text: `Top ${topPct}% ${c.metric}`,
+        impressiveness: 100 - topPct,
+        value: c.value,
+      });
     }
-  }
-
-  // Steps as distance — with fun city-to-city comparisons
-  if (report.activity?.available && report.activity.averages?.stepsPerDay) {
-    const totalDays = report.activity.totalDays || 30;
-    const totalSteps = report.activity.averages.stepsPerDay * totalDays;
-    const km = totalSteps * 0.000762; // ~0.762m per step
-    if (km > 100) {
-      const routes = [
-        { km: 3944, route: "New York → Los Angeles" },
-        { km: 2500, route: "London → Istanbul" },
-        { km: 1160, route: "Tokyo → Seoul" },
-        { km: 615,  route: "San Francisco → LA" },
-        { km: 430,  route: "Paris → Amsterdam" },
-        { km: 306,  route: "Boston → NYC" },
-        { km: 150,  route: "London → Birmingham" },
-      ];
-      let bestRoute = null;
-      for (const r of routes) {
-        if (km >= r.km * 0.85) { bestRoute = r; break; }
-      }
-      const label = bestRoute
-        ? `Walked ${Math.round(km).toLocaleString()}km — the distance from ${bestRoute.route}`
-        : `Walked ${Math.round(km).toLocaleString()}km`;
-      candidates.push({ text: label, impressiveness: Math.min(85, 40 + km / 50), value: `${Math.round(km)}km` });
-    }
-  }
-
-  // High-recovery days
-  if (report.recovery?.available && report.recovery.recoveryScore >= 70) {
-    candidates.push({ text: `Recovery score: ${report.recovery.recoveryScore}`, impressiveness: 50, value: `${report.recovery.recoveryScore}` });
   }
 
   candidates.sort((a, b) => b.impressiveness - a.impressiveness);
   return candidates[0] || null;
+}
+
+export function computeWalkStat(report) {
+  if (!report.activity?.available || !report.activity.averages?.stepsPerDay) return null;
+  const totalDays = report.activity.totalDays || report.activity.daysAnalyzed || 30;
+  const totalSteps = report.activity.averages.stepsPerDay * totalDays;
+  const km = totalSteps * 0.000762;
+  if (km <= 0) return null;
+
+  const routes = [
+    { km: 3944, route: "New York → Los Angeles" },
+    { km: 2500, route: "London → Istanbul" },
+    { km: 1160, route: "Tokyo → Seoul" },
+    { km: 615, route: "San Francisco → LA" },
+    { km: 430, route: "Paris → Amsterdam" },
+    { km: 306, route: "Boston → NYC" },
+    { km: 150, route: "London → Birmingham" },
+  ];
+
+  let bestRoute = null;
+  for (const r of routes) {
+    if (km >= r.km * 0.85) {
+      bestRoute = r;
+      break;
+    }
+  }
+
+  return {
+    text: bestRoute
+      ? `Walked ${Math.round(km).toLocaleString()}km — the distance from ${bestRoute.route}`
+      : `Walked ${Math.round(km).toLocaleString()}km in this period`,
+  };
 }
 
 /**
@@ -446,12 +461,8 @@ export function generateWrappedHTML(report, options = {}) {
   const comparisons = computeComparisons(report);
   const insights = generateWrappedInsights(report);
   const heroBoast = computeHeroBoast(report, comparisons);
+  const walkStat = computeWalkStat(report);
   const calorieEq = computeCalorieEquivalence(report);
-  // Derive stat — skip walking distance if hero boast already shows it
-  let derivedStat = computeDerivedStat(report);
-  if (derivedStat && heroBoast && derivedStat.text.includes('walked') && heroBoast.text.includes('km')) {
-    derivedStat = null; // avoid duplicate walking distance lines
-  }
   const score = report.overall?.score ?? 0;
   const pct = Math.min(100, Math.max(0, score));
   const color = scoreColor(score);
@@ -586,8 +597,8 @@ body{background:#0a0a0f;color:#e2e8f0;font-family:Inter,-apple-system,BlinkMacSy
     <div class="hero-boast-text">${escapeHtml(heroBoast.text)}</div>
   </div>` : ""}
 
-  ${derivedStat ? `<div class="derived-stat">
-    <div class="derived-stat-text">${escapeHtml(derivedStat.text)}</div>
+  ${walkStat ? `<div class="derived-stat">
+    <div class="derived-stat-text">${escapeHtml(walkStat.text)}</div>
   </div>` : ""}
 
   ${calorieEq ? `<div class="calorie-eq">
