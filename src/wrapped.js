@@ -4,43 +4,48 @@
  */
 
 // ─── Population benchmarks (age-adjusted general adult ranges) ───
+// Benchmarks: general adult population estimates.
+// HRV varies significantly by age/sex (Kubios 2024, Welltory 2023 meta-analysis, 296k+).
+// RHR: AHA normal 60-100; athletes as low as 40 (WHOOP avg ~55-59 for health-conscious users).
+// Steps: Lancet 2025 meta-analysis — 7k/day is the meaningful health threshold.
+// Deep sleep: Sleep Foundation — adults typically 10-20% of total sleep (40-110min for 7-9h).
 const BENCHMARKS = {
   hrv: [
-    { max: 20, label: "Below average", pct: "bottom 20%" },
-    { max: 40, label: "Average", pct: "40th percentile" },
-    { max: 60, label: "Good", pct: "60th percentile" },
-    { max: 80, label: "Very good", pct: "top 25%" },
-    { max: 120, label: "Excellent", pct: "top 10%" },
-    { max: Infinity, label: "Elite", pct: "top 5%" },
+    { max: 20, label: "Low", pct: "below average" },
+    { max: 35, label: "Below average", pct: "~30th percentile" },
+    { max: 50, label: "Average", pct: "~50th percentile" },
+    { max: 70, label: "Above average", pct: "top ~30%" },
+    { max: 100, label: "Strong", pct: "top ~15%" },
+    { max: Infinity, label: "Elite", pct: "top ~5%" },
   ],
   rhr: [
-    { max: 50, label: "Athlete", pct: "top 5%" },
-    { max: 60, label: "Excellent", pct: "top 15%" },
-    { max: 70, label: "Good", pct: "top 40%" },
-    { max: 80, label: "Average", pct: "50th percentile" },
+    { max: 50, label: "Athlete-level", pct: "top ~5%" },
+    { max: 60, label: "Very fit", pct: "top ~20%" },
+    { max: 70, label: "Good", pct: "top ~40%" },
+    { max: 80, label: "Average", pct: "~50th percentile" },
     { max: Infinity, label: "Above average", pct: "below 50th" },
   ],
   steps: [
-    { max: 4000, label: "Sedentary", pct: "bottom 25%" },
-    { max: 7500, label: "Low active", pct: "40th percentile" },
-    { max: 10000, label: "Somewhat active", pct: "60th percentile" },
-    { max: 12500, label: "Active", pct: "top 25%" },
-    { max: Infinity, label: "Highly active", pct: "top 10%" },
+    { max: 4000, label: "Sedentary", pct: "below average" },
+    { max: 7000, label: "Moderate", pct: "~40th percentile" },
+    { max: 10000, label: "Active", pct: "top ~35%" },
+    { max: 12500, label: "Very active", pct: "top ~20%" },
+    { max: Infinity, label: "Highly active", pct: "top ~10%" },
   ],
   sleepHours: [
-    { max: 5, label: "Very short", pct: "bottom 10%" },
-    { max: 6, label: "Short", pct: "bottom 25%" },
-    { max: 7, label: "Adequate", pct: "50th percentile" },
-    { max: 8, label: "Optimal", pct: "top 30%" },
-    { max: 9, label: "Long", pct: "top 15%" },
-    { max: Infinity, label: "Very long", pct: "top 5%" },
+    { max: 5, label: "Very short", pct: "below average" },
+    { max: 6, label: "Short", pct: "~25th percentile" },
+    { max: 7, label: "Adequate", pct: "~50th percentile" },
+    { max: 8, label: "Optimal", pct: "top ~30%" },
+    { max: 9, label: "Long", pct: "top ~15%" },
+    { max: Infinity, label: "Very long", pct: "top ~5%" },
   ],
   deepSleep: [
-    { max: 20, label: "Low", pct: "bottom 20%" },
-    { max: 40, label: "Below average", pct: "35th percentile" },
-    { max: 60, label: "Average", pct: "55th percentile" },
-    { max: 90, label: "Good", pct: "top 25%" },
-    { max: Infinity, label: "Excellent", pct: "top 10%" },
+    { max: 20, label: "Low", pct: "below average" },
+    { max: 40, label: "Below average", pct: "~35th percentile" },
+    { max: 60, label: "Average", pct: "~50th percentile" },
+    { max: 90, label: "Above average", pct: "top ~25%" },
+    { max: Infinity, label: "Strong", pct: "top ~10%" },
   ],
 };
 
@@ -80,51 +85,55 @@ export function computeHealthIdentity(report) {
   const a = report.activity;
   const score = report.overall?.score ?? 0;
 
+  // --- Tier 1: Elite overall ---
   if (score > 90) {
     return { title: "Longevity Champion", tagline: "Top 1% isn't luck. Your body, your data, your edge.", icon: ARCHETYPE_ICONS.longevity, elite: true };
   }
   if (score > 85) {
-    return { title: "The Optimizer", tagline: "Your body is a system. The numbers say it's dialed in.", icon: ARCHETYPE_ICONS.optimizer };
+    return { title: "The Optimizer", tagline: "Score above 85. Most people don't even measure — you're outperforming.", icon: ARCHETYPE_ICONS.optimizer };
   }
-  // Early Bird before Clockwork — more specific (beds before 21:30)
-  if (s?.available && s.averages?.bedtimeHour < 21.5 && s.averages?.durationMinutes >= 360)
-    return { title: "The Early Bird", tagline: "Asleep before most people finish dinner. The morning belongs to you.", icon: ARCHETYPE_ICONS.earlyBird };
-  if (s?.available && s.averages?.bedtimeHour < 22 && s.averages?.bedtimeVariability < 0.5)
-    return { title: "The Clockwork", tagline: "Same time, every night. Your circadian rhythm doesn't negotiate.", icon: ARCHETYPE_ICONS.clockwork };
+
+  // --- Tier 2: Elite physiological outcomes (highest status) ---
+  if (r?.available && r.averageRHR && r.averageRHR < 55)
+    return { title: "The Endurance Engine", tagline: "Resting heart rate of an athlete. Your cardiovascular system was built for distance.", icon: ARCHETYPE_ICONS.endurance };
   if (r?.available && r.averageHRV > 80)
     return { title: "The Recovered", tagline: "Your nervous system recovers like it's being paid to. Most people wish.", icon: ARCHETYPE_ICONS.recovered };
   if (a?.available && a.averages?.stepsPerDay > 12000)
     return { title: "The Mover", tagline: "12K+ steps is your baseline. Some people call that a hike.", icon: ARCHETYPE_ICONS.mover };
   if (s?.available && s.averages?.deepMinutes > 60)
-    return { title: "The Deep Sleeper", tagline: "While others toss and turn, your brain hits the repair shop every night.", icon: ARCHETYPE_ICONS.deepSleeper };
-  if (r?.available && r.averageRHR && r.averageRHR < 55)
-    return { title: "The Endurance Engine", tagline: "Resting heart rate of an athlete. Your cardiovascular system was built for distance.", icon: ARCHETYPE_ICONS.endurance };
-  if (s?.available && s.averages?.durationMinutes > 480)
-    return { title: "The Recharger", tagline: "8+ hours isn't lazy — it's strategic. You prioritize recovery like a pro.", icon: ARCHETYPE_ICONS.recharger };
+    return { title: "The Deep Sleeper", tagline: "60+ minutes of deep sleep per night. Your brain rebuilds while the world scrolls.", icon: ARCHETYPE_ICONS.deepSleeper };
   if (a?.available && a.averages?.activeEnergyPerDay > 600)
     return { title: "The Burner", tagline: "600+ kcal burned daily. Your metabolism runs like it has somewhere to be.", icon: ARCHETYPE_ICONS.burner };
-  // Iron Mind — moderate-good everything, high consistency (after more specific archetypes)
+
+  // --- Tier 3: Behavioral/consistency archetypes ---
+  if (s?.available && s.averages?.bedtimeHour < 21.5 && s.averages?.durationMinutes >= 360)
+    return { title: "The Early Bird", tagline: "Asleep before most people finish dinner. The morning belongs to you.", icon: ARCHETYPE_ICONS.earlyBird };
+  if (s?.available && s.averages?.bedtimeHour < 22 && s.averages?.bedtimeVariability < 0.5)
+    return { title: "The Clockwork", tagline: "Same time, every night. Your circadian rhythm doesn't negotiate.", icon: ARCHETYPE_ICONS.clockwork };
   if (s?.available && s.averages?.bedtimeVariability < 0.5 && score >= 65 && r?.available && r.averageHRV >= 40)
     return { title: "The Iron Mind", tagline: "Nothing flashy, nothing skipped. Consistency is your unfair advantage.", icon: ARCHETYPE_ICONS.ironMind };
-  // New: Zen Master — good HRV + good sleep + moderate activity (balanced)
+  if (s?.available && s.averages?.durationMinutes > 480)
+    return { title: "The Recharger", tagline: "8+ hours every night. Your body recovers while others burn out.", icon: ARCHETYPE_ICONS.recharger };
   if (r?.available && r.averageHRV >= 50 && s?.available && s.averages?.durationMinutes >= 420 && a?.available && a.averages?.stepsPerDay >= 6000)
-    return { title: "The Zen Master", tagline: "Sleep, recovery, movement — all in balance. Your body runs on equilibrium.", icon: ARCHETYPE_ICONS.zenMaster };
-  if (s?.available && s.averages?.bedtimeHour >= 24)
-    return { title: "The Night Owl", tagline: "The world sleeps, you create. Late nights are your competitive edge.", icon: ARCHETYPE_ICONS.nightOwl };
+    return { title: "The Zen Master", tagline: "Sleep, recovery, movement — all balanced. No weak link in your chain.", icon: ARCHETYPE_ICONS.zenMaster };
 
-  return { title: "The Tracker", tagline: "You measure what matters. That alone puts you ahead of 90%.", icon: ARCHETYPE_ICONS.tracker };
+  // --- Tier 4: Fallback ---
+  if (s?.available && s.averages?.bedtimeHour >= 24)
+    return { title: "The Night Owl", tagline: "The world sleeps, you create. Late nights are your territory.", icon: ARCHETYPE_ICONS.nightOwl };
+
+  return { title: "The Tracker", tagline: "You measure what most people ignore. That's already an edge.", icon: ARCHETYPE_ICONS.tracker };
 }
 
 function toTopPercent(pctLabel) {
   if (!pctLabel) return null;
   const lower = pctLabel.toLowerCase();
-  if (lower.startsWith("top")) {
-    const m = lower.match(/top\s+(\d+)/);
-    return m ? parseInt(m[1], 10) : null;
-  }
-  const percentileMatch = lower.match(/(\d+)(?:st|nd|rd|th) percentile/);
-  if (percentileMatch) {
-    const pct = parseInt(percentileMatch[1], 10);
+  // Match "top ~X%" or "top X%"
+  const topMatch = lower.match(/top\s*~?(\d+)/);
+  if (topMatch) return parseInt(topMatch[1], 10);
+  // Match "~Xth percentile" or "Xth percentile"
+  const pctMatch = lower.match(/~?(\d+)(?:st|nd|rd|th) percentile/);
+  if (pctMatch) {
+    const pct = parseInt(pctMatch[1], 10);
     return Math.max(1, 100 - pct);
   }
   return null;
@@ -194,15 +203,15 @@ export function computeCalorieEquivalence(report) {
   const totalKcal = Math.round(report.activity.averages.activeEnergyPerDay * days);
   if (totalKcal < 1000) return null;
 
-  // Fun equivalences sorted by kcal threshold (descending) — varied types
+  // Fun equivalences sorted by kcal threshold (descending) — all activity-based
   const equivalences = [
     { min: 500000, text: (k) => `You burned ${k.toLocaleString()} kcal — enough to climb Everest ${(k / 20000).toFixed(0)} times` },
     { min: 250000, text: (k) => `You burned ${k.toLocaleString()} kcal — equivalent to running ${Math.round(k / 2600)} marathons` },
-    { min: 100000, text: (k) => `You burned ${k.toLocaleString()} kcal — that's ${(k / 7700).toFixed(1)}kg of pure body fat in energy` },
-    { min: 50000,  text: (k) => `You burned ${k.toLocaleString()} kcal — that's ${(k / 7700).toFixed(1)}kg of pure body fat in energy` },
-    { min: 25000,  text: (k) => `You burned ${k.toLocaleString()} kcal — equivalent to running ${Math.round(k / 2600)} marathons` },
-    { min: 10000,  text: (k) => `You burned ${k.toLocaleString()} kcal — enough to melt ${(k / 7700).toFixed(1)}kg of body fat` },
-    { min: 5000,   text: (k) => `You burned ${k.toLocaleString()} kcal — equivalent to running ${Math.round(k / 100)}km` },
+    { min: 100000, text: (k) => `You burned ${k.toLocaleString()} kcal — enough to run from London to Tokyo and back` },
+    { min: 50000,  text: (k) => `You burned ${k.toLocaleString()} kcal — equivalent to running ${Math.round(k / 2600)} marathons` },
+    { min: 25000,  text: (k) => `You burned ${k.toLocaleString()} kcal — that's ${Math.round(k / 100)}km worth of running` },
+    { min: 10000,  text: (k) => `You burned ${k.toLocaleString()} kcal — equivalent to ${Math.round(k / 500)} hours of swimming` },
+    { min: 5000,   text: (k) => `You burned ${k.toLocaleString()} kcal — about ${Math.round(k / 2600)} marathons in energy` },
     { min: 1000,   text: (k) => `You burned ${k.toLocaleString()} kcal — about ${Math.round(k / 100)} 5K runs worth of energy` },
   ];
 
@@ -535,7 +544,7 @@ body{background:#0a0a0f;color:#e2e8f0;font-family:Inter,-apple-system,BlinkMacSy
 .identity-title{font-size:22px;font-weight:700;color:#f1f5f9;margin:4px 0}
 .identity-tagline{font-size:13px;color:#7c3aed;font-style:italic}
 .hero-boast{text-align:center;margin-bottom:24px}
-.hero-boast-text{display:inline-block;font-size:15px;font-weight:700;color:#f1f5f9;background:linear-gradient(135deg,rgba(124,58,237,0.15),rgba(34,197,94,0.1));border:1px solid rgba(124,58,237,0.25);border-radius:12px;padding:10px 20px;letter-spacing:0.5px}
+.hero-boast-text{display:inline-block;font-size:18px;font-weight:800;color:#f1f5f9;background:linear-gradient(135deg,rgba(124,58,237,0.18),rgba(34,197,94,0.12));border:1px solid rgba(124,58,237,0.3);border-radius:14px;padding:14px 28px;letter-spacing:0.5px}
 .derived-stat{text-align:center;margin-bottom:24px;padding:14px 20px;background:rgba(124,58,237,0.06);border:1px solid rgba(124,58,237,0.12);border-radius:14px}
 .derived-stat-text{font-size:14px;color:#c4b5fd;font-weight:500;line-height:1.5;font-style:italic}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:24px}
@@ -686,7 +695,7 @@ export function generateDemoCards(outDir) {
     { name: "clockwork", score: 75, sleep: { dur: 440, deep: 55, rem: 80, btHour: 21.6, btVar: 0.25 }, hrv: 55, rhr: 62, steps: 8500, kcal: 520 },
     { name: "recovered", score: 78, sleep: { dur: 430, deep: 50, rem: 85, btHour: 22.5, btVar: 0.6 }, hrv: 95, rhr: 56, steps: 9200, kcal: 600 },
     { name: "mover", score: 72, sleep: { dur: 400, deep: 45, rem: 70, btHour: 23.0, btVar: 0.7 }, hrv: 50, rhr: 65, steps: 15000, kcal: 920 },
-    { name: "early-bird", score: 77, sleep: { dur: 420, deep: 58, rem: 82, btHour: 21.0, btVar: 0.35 }, hrv: 62, rhr: 58, steps: 10200, kcal: 680 },
+    { name: "early-bird", score: 77, sleep: { dur: 420, deep: 52, rem: 82, btHour: 21.0, btVar: 0.35 }, hrv: 62, rhr: 58, steps: 9500, kcal: 550 },
     { name: "deep-sleeper", score: 76, sleep: { dur: 470, deep: 80, rem: 90, btHour: 22.0, btVar: 0.5 }, hrv: 60, rhr: 60, steps: 7000, kcal: 480 },
     { name: "endurance-engine", score: 74, sleep: { dur: 420, deep: 55, rem: 75, btHour: 22.5, btVar: 0.6 }, hrv: 65, rhr: 48, steps: 11000, kcal: 780 },
     { name: "iron-mind", score: 71, sleep: { dur: 435, deep: 52, rem: 78, btHour: 22.2, btVar: 0.45 }, hrv: 55, rhr: 63, steps: 8800, kcal: 550 },
