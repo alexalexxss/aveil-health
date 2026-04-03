@@ -87,7 +87,7 @@ export function computeHealthIdentity(report) {
 
   // --- Tier 1: Elite overall ---
   if (score > 90) {
-    return { title: "Longevity Champion", tagline: "Top 1% isn't luck. Your body, your data, your edge.", icon: ARCHETYPE_ICONS.longevity, elite: true };
+    return { title: "Longevity Champion", tagline: "Sleep, recovery, activity — all elite. You're not optimizing for today. You're optimizing for decades.", icon: ARCHETYPE_ICONS.longevity, elite: true };
   }
   if (score > 85) {
     return { title: "The Optimizer", tagline: "Every metric dialed. You don't guess — you measure, adjust, and win.", icon: ARCHETYPE_ICONS.optimizer };
@@ -203,15 +203,15 @@ export function computeCalorieEquivalence(report) {
   const totalKcal = Math.round(report.activity.averages.activeEnergyPerDay * days);
   if (totalKcal < 1000) return null;
 
-  // Fun equivalences sorted by kcal threshold (descending) — all activity-based
+  // Fun equivalences sorted by kcal threshold (descending) — varied, no repeats
   const equivalences = [
     { min: 500000, text: (k) => `You burned ${k.toLocaleString()} kcal — enough to climb Everest ${(k / 20000).toFixed(0)} times` },
     { min: 250000, text: (k) => `You burned ${k.toLocaleString()} kcal — equivalent to running ${Math.round(k / 2600)} marathons` },
-    { min: 100000, text: (k) => `You burned ${k.toLocaleString()} kcal — enough to run from London to Tokyo and back` },
-    { min: 50000,  text: (k) => `You burned ${k.toLocaleString()} kcal — equivalent to running ${Math.round(k / 2600)} marathons` },
-    { min: 25000,  text: (k) => `You burned ${k.toLocaleString()} kcal — that's ${Math.round(k / 100)}km worth of running` },
-    { min: 10000,  text: (k) => `You burned ${k.toLocaleString()} kcal — equivalent to ${Math.round(k / 500)} hours of swimming` },
-    { min: 5000,   text: (k) => `You burned ${k.toLocaleString()} kcal — about ${Math.round(k / 2600)} marathons in energy` },
+    { min: 100000, text: (k) => `You burned ${k.toLocaleString()} kcal — enough to power your phone for ${Math.round(k / 2.5)} days` },
+    { min: 50000,  text: (k) => `You burned ${k.toLocaleString()} kcal — that's ${Math.round(k / 500)} hours of swimming` },
+    { min: 25000,  text: (k) => `You burned ${k.toLocaleString()} kcal — about ${Math.round(k / 100)}km worth of running` },
+    { min: 10000,  text: (k) => `You burned ${k.toLocaleString()} kcal — equivalent to cycling ${Math.round(k / 30)}km` },
+    { min: 5000,   text: (k) => `You burned ${k.toLocaleString()} kcal — enough to hike for ${Math.round(k / 400)} hours straight` },
     { min: 1000,   text: (k) => `You burned ${k.toLocaleString()} kcal — about ${Math.round(k / 100)} 5K runs worth of energy` },
   ];
 
