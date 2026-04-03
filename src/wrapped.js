@@ -55,6 +55,7 @@ function getBenchmark(category, value) {
 
 // ─── Inline SVG icons (monochrome, 24x24 viewBox) ───
 const ARCHETYPE_ICONS = {
+  longevity: `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2l2.4 7.2H22l-6 4.8 2.4 7.2L12 16.4l-6.4 4.8 2.4-7.2-6-4.8h7.6L12 2z" stroke="#d8b4fe" stroke-width="1.5" fill="#d8b4fe" fill-opacity="0.15" stroke-linejoin="round"/><circle cx="12" cy="12" r="3.5" stroke="#d8b4fe" stroke-width="1.3"/></svg>`,
   optimizer: `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" stroke="#c4b5fd" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
   clockwork: `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="9" stroke="#c4b5fd" stroke-width="1.5"/><path d="M12 7v5l3 3" stroke="#c4b5fd" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
   recovered: `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" stroke="#c4b5fd" stroke-width="1.5"/><path d="M8 14s1.5 2 4 2 4-2 4-2" stroke="#c4b5fd" stroke-width="1.5" stroke-linecap="round"/><path d="M9 9h.01M15 9h.01" stroke="#c4b5fd" stroke-width="2" stroke-linecap="round"/></svg>`,
@@ -79,6 +80,9 @@ export function computeHealthIdentity(report) {
   const a = report.activity;
   const score = report.overall?.score ?? 0;
 
+  if (score > 90) {
+    return { title: "Longevity Champion", tagline: "Top 1% isn't luck. Your body, your data, your edge.", icon: ARCHETYPE_ICONS.longevity, elite: true };
+  }
   if (score > 85) {
     return { title: "The Optimizer", tagline: "Your body is a system. The numbers say it's dialed in.", icon: ARCHETYPE_ICONS.optimizer };
   }
@@ -194,7 +198,7 @@ export function computeCalorieEquivalence(report) {
   const equivalences = [
     { min: 500000, text: (k) => `You burned ${k.toLocaleString()} kcal — enough to climb Everest ${(k / 20000).toFixed(0)} times` },
     { min: 250000, text: (k) => `You burned ${k.toLocaleString()} kcal — equivalent to running ${Math.round(k / 2600)} marathons` },
-    { min: 100000, text: (k) => `You burned ${k.toLocaleString()} kcal — equivalent to running ${Math.round(k / 2600)} marathons back to back` },
+    { min: 100000, text: (k) => `You burned ${k.toLocaleString()} kcal — that's ${(k / 7700).toFixed(1)}kg of pure body fat in energy` },
     { min: 50000,  text: (k) => `You burned ${k.toLocaleString()} kcal — that's ${(k / 7700).toFixed(1)}kg of pure body fat in energy` },
     { min: 25000,  text: (k) => `You burned ${k.toLocaleString()} kcal — equivalent to running ${Math.round(k / 2600)} marathons` },
     { min: 10000,  text: (k) => `You burned ${k.toLocaleString()} kcal — enough to melt ${(k / 7700).toFixed(1)}kg of body fat` },
@@ -465,7 +469,9 @@ export function generateWrappedHTML(report, options = {}) {
   const calorieEq = computeCalorieEquivalence(report);
   const score = report.overall?.score ?? 0;
   const pct = Math.min(100, Math.max(0, score));
-  const color = scoreColor(score);
+  const isElite = identity.elite === true;
+  const color = isElite ? '#c084fc' : scoreColor(score);
+  const ringGlow = isElite ? '0 0 60px rgba(192,132,252,0.4), 0 0 20px rgba(192,132,252,0.2)' : '0 0 40px rgba(124,58,237,0.15)';
   const today = new Date().toISOString().slice(0, 10);
   const daysAnalyzed = report.activity?.totalDays || report.sleep?.nightsAnalyzed || report.recovery?.daysAnalyzed || 365;
   const endDate = new Date();
@@ -520,7 +526,7 @@ body{background:#0a0a0f;color:#e2e8f0;font-family:Inter,-apple-system,BlinkMacSy
 .logo{font-size:14px;letter-spacing:4px;color:#7c3aed;font-weight:700;margin-bottom:4px}
 .subtitle{font-size:12px;color:#c4b5fd;letter-spacing:1px;font-weight:500}
 .score-section{text-align:center;margin-bottom:24px}
-.score-ring{width:140px;height:140px;border-radius:50%;background:conic-gradient(${color} ${pct * 3.6}deg,#1e1e2e ${pct * 3.6}deg);display:inline-flex;align-items:center;justify-content:center;position:relative;box-shadow:0 0 40px rgba(124,58,237,0.15)}
+.score-ring{width:140px;height:140px;border-radius:50%;background:conic-gradient(${color} ${pct * 3.6}deg,#1e1e2e ${pct * 3.6}deg);display:inline-flex;align-items:center;justify-content:center;position:relative;box-shadow:${ringGlow}}
 .score-inner{width:110px;height:110px;border-radius:50%;background:#0a0a0f;display:flex;flex-direction:column;align-items:center;justify-content:center}
 .score-num{font-size:36px;font-weight:800;color:${color}}
 .score-label{font-size:11px;color:#64748b;margin-top:2px}
@@ -675,6 +681,7 @@ export function generateDemoCards(outDir) {
   mkdirSync(outDir, { recursive: true });
 
   const demos = [
+    { name: "longevity-champion", score: 94, sleep: { dur: 480, deep: 85, rem: 100, btHour: 21.3, btVar: 0.2 }, hrv: 120, rhr: 45, steps: 14500, kcal: 900 },
     { name: "optimizer", score: 88, sleep: { dur: 465, deep: 72, rem: 95, btHour: 21.5, btVar: 0.3 }, hrv: 110, rhr: 48, steps: 13900, kcal: 850 },
     { name: "clockwork", score: 75, sleep: { dur: 440, deep: 55, rem: 80, btHour: 21.6, btVar: 0.25 }, hrv: 55, rhr: 62, steps: 8500, kcal: 520 },
     { name: "recovered", score: 78, sleep: { dur: 430, deep: 50, rem: 85, btHour: 22.5, btVar: 0.6 }, hrv: 95, rhr: 56, steps: 9200, kcal: 600 },
