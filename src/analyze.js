@@ -102,52 +102,62 @@ function analyzeSleep(sleepRecords, heartRateRecords, hrvRecords) {
 }
 
 function groupSleepByNight(records) {
-  // Apple Health sleep values:
-  // HKCategoryValueSleepAnalysisInBed
-  // HKCategoryValueSleepAnalysisAsleepCore
-  // HKCategoryValueSleepAnalysisAsleepDeep
-  // HKCategoryValueSleepAnalysisAsleepREM
-  // HKCategoryValueSleepAnalysisAwake
-  // HKCategoryValueSleepAnalysisAsleepUnspecified
-
-  const ASLEEP_TYPES = new Set([
-    "HKCategoryValueSleepAnalysisAsleepCore",
-    "HKCategoryValueSleepAnalysisAsleepDeep",
-    "HKCategoryValueSleepAnalysisAsleepREM",
-    "HKCategoryValueSleepAnalysisAsleepUnspecified",
-  ]);
-
-  // Group by "night" — use end date's calendar date as the night key
   const nightMap = new Map();
 
   for (const r of records) {
-    const end = new Date(r.end);
     const start = new Date(r.start);
-    // Night key: the date you wake up
-    const nightKey = end.toISOString().slice(0, 10);
+    const end = new Date(r.end);
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end <= start) continue;
 
+    const nightKey = sleepNightKey(end);
     if (!nightMap.has(nightKey)) {
-      nightMap.set(nightKey, { segments: [], sleepStart: null, sleepEnd: null });
+      nightMap.set(nightKey, []);
     }
-    const night = nightMap.get(nightKey);
-    night.segments.push({ ...r, startDate: start, endDate: end });
-    if (!night.sleepStart || start < new Date(night.sleepStart)) night.sleepStart = r.start;
-    if (!night.sleepEnd || end > new Date(night.sleepEnd)) night.sleepEnd = r.end;
+
+    nightMap.get(nightKey).push({
+      ...r,
+      startDate: start,
+      endDate: end,
+      startMs: start.getTime(),
+      endMs: end.getTime(),
+    });
   }
 
   const nights = [];
-  for (const [date, night] of nightMap) {
-    let deep = 0, rem = 0, core = 0, awake = 0, total = 0;
+  for (const [date, segments] of nightMap) {
+    const mergedSegments = mergeSleepSegments(segments);
+    if (!mergedSegments.length) continue;
 
-    for (const seg of night.segments) {
-      const mins = (seg.endDate - seg.startDate) / 60000;
-      if (seg.value === "HKCategoryValueSleepAnalysisAsleepDeep") deep += mins;
-      else if (seg.value === "HKCategoryValueSleepAnalysisAsleepREM") rem += mins;
-      else if (seg.value === "HKCategoryValueSleepAnalysisAsleepCore") core += mins;
-      else if (seg.value === "HKCategoryValueSleepAnalysisAwake") awake += mins;
-      else if (seg.value === "HKCategoryValueSleepAnalysisAsleepUnspecified") core += mins;
+    let deep = 0;
+    let rem = 0;
+    let core = 0;
+    let awake = 0;
+    let total = 0;
+    let sleepStart = null;
+    let sleepEnd = null;
 
-      if (ASLEEP_TYPES.has(seg.value)) total += mins;
+    for (const seg of mergedSegments) {
+      const mins = (seg.endMs - seg.startMs) / 60000;
+      if (mins <= 0) continue;
+
+      if (!sleepStart || seg.startMs < sleepStart) sleepStart = seg.startMs;
+      if (!sleepEnd || seg.endMs > sleepEnd) sleepEnd = seg.endMs;
+
+      if (seg.value === "HKCategoryValueSleepAnalysisAsleepDeep") {
+        deep += mins;
+        total += mins;
+      } else if (seg.value === "HKCategoryValueSleepAnalysisAsleepREM") {
+        rem += mins;
+        total += mins;
+      } else if (seg.value === "HKCategoryValueSleepAnalysisAsleepCore") {
+        core += mins;
+        total += mins;
+      } else if (seg.value === "HKCategoryValueSleepAnalysisAsleepUnspecified") {
+        core += mins;
+        total += mins;
+      } else if (seg.value === "HKCategoryValueSleepAnalysisAwake") {
+        awake += mins;
+      }
     }
 
     nights.push({
@@ -157,8 +167,8 @@ function groupSleepByNight(records) {
       remMinutes: round(rem),
       coreMinutes: round(core),
       awakeMinutes: round(awake),
-      sleepStart: night.sleepStart,
-      sleepEnd: night.sleepEnd,
+      sleepStart: sleepStart ? new Date(sleepStart).toISOString() : null,
+      sleepEnd: sleepEnd ? new Date(sleepEnd).toISOString() : null,
     });
   }
 
@@ -170,7 +180,7 @@ function groupSleepByNight(records) {
 function analyzeActivity(steps, activeEnergy, workouts) {
   if (!steps.length && !workouts.length) return { available: false };
 
-  const dailySteps = aggregateByDay(steps);
+  const dailySteps = aggregateByDay(steps, "sum", { sourceRank: stepSourceRank });
   const dailyEnergy = aggregateByDay(activeEnergy);
   const allDays = Object.keys(dailySteps).sort();
   const recentDays = allDays.slice(-14); // for trend/last-day
@@ -214,7 +224,7 @@ function analyzeRecovery(hrvRecords, restingHRRecords, sleepAnalysis) {
   if (!hrvRecords.length) return { available: false };
 
   const dailyHRV = aggregateByDay(hrvRecords, "mean");
-  const dailyRHR = aggregateByDay(restingHRRecords, "mean");
+  const dailyRHR = aggregateByDay(restingHRRecords, "mean", { sourceRank: restingHRSourceRank });
 
   const allHRVDays = Object.keys(dailyHRV).sort();
   const recentDays = allHRVDays.slice(-14);
@@ -256,9 +266,9 @@ function analyzeNutrition(dietaryEnergy, dietaryProtein) {
     return { available: false, note: "No dietary data found in Apple Health export." };
   }
 
-  const dailyCals = aggregateByDay(dietaryEnergy);
-  const dailyProtein = aggregateByDay(dietaryProtein);
-  const recentDays = Object.keys(dailyCals).sort().slice(-14);
+  const dailyCals = aggregateByDay(dietaryEnergy, "sum", { dedupeExact: true });
+  const dailyProtein = aggregateByDay(dietaryProtein, "sum", { dedupeExact: true });
+  const recentDays = [...new Set([...Object.keys(dailyCals), ...Object.keys(dailyProtein)])].sort().slice(-14);
 
   return {
     available: true,
@@ -380,20 +390,172 @@ function computeOverallScore(sleep, activity, recovery, nutrition) {
 
 // ─── Helpers ───
 
-function aggregateByDay(records, mode = "sum") {
+function aggregateByDay(records, mode = "sum", options = {}) {
+  const { dedupeExact = false, sourceRank = null } = options;
   const days = {};
+
   for (const r of records) {
     const day = (r.start || "").slice(0, 10);
     if (!day) continue;
     if (!days[day]) days[day] = [];
-    days[day].push(r.value);
+    days[day].push(r);
   }
 
   const result = {};
-  for (const [day, vals] of Object.entries(days)) {
+  for (const [day, dayRecords] of Object.entries(days)) {
+    let normalized = dedupeExact ? dedupeExactRecords(dayRecords) : dayRecords;
+    if (sourceRank) {
+      normalized = keepBestSourceRecords(normalized, sourceRank);
+    }
+
+    const vals = normalized
+      .map((record) => Number(record.value))
+      .filter((value) => Number.isFinite(value));
+
+    if (!vals.length) continue;
     result[day] = mode === "mean" ? mean(vals) : vals.reduce((a, b) => a + b, 0);
   }
   return result;
+}
+
+function mergeSleepSegments(segments) {
+  const usable = segments.filter((segment) => segment.value !== "HKCategoryValueSleepAnalysisInBed");
+  if (!usable.length) return [];
+
+  const boundaries = [...new Set(usable.flatMap((segment) => [segment.startMs, segment.endMs]))]
+    .sort((a, b) => a - b);
+
+  const merged = [];
+  for (let i = 0; i < boundaries.length - 1; i += 1) {
+    const startMs = boundaries[i];
+    const endMs = boundaries[i + 1];
+    if (endMs <= startMs) continue;
+
+    const overlapping = usable.filter((segment) => segment.startMs < endMs && segment.endMs > startMs);
+    if (!overlapping.length) continue;
+
+    const chosen = chooseSleepSegment(overlapping);
+    if (!chosen) continue;
+
+    const previous = merged[merged.length - 1];
+    if (previous
+      && previous.value === chosen.value
+      && previous.source === chosen.source
+      && previous.endMs === startMs) {
+      previous.endMs = endMs;
+      continue;
+    }
+
+    merged.push({
+      value: chosen.value,
+      source: chosen.source,
+      startMs,
+      endMs,
+    });
+  }
+
+  return merged;
+}
+
+function chooseSleepSegment(segments) {
+  return segments
+    .slice()
+    .sort((a, b) => {
+      const sourceDelta = sleepSourceRank(b.source) - sleepSourceRank(a.source);
+      if (sourceDelta !== 0) return sourceDelta;
+
+      const stageDelta = sleepStageRank(b.value) - sleepStageRank(a.value);
+      if (stageDelta !== 0) return stageDelta;
+
+      return (a.endMs - a.startMs) - (b.endMs - b.startMs);
+    })[0] || null;
+}
+
+function sleepStageRank(value) {
+  switch (value) {
+    case "HKCategoryValueSleepAnalysisAsleepDeep":
+      return 5;
+    case "HKCategoryValueSleepAnalysisAsleepREM":
+      return 4;
+    case "HKCategoryValueSleepAnalysisAsleepCore":
+      return 3;
+    case "HKCategoryValueSleepAnalysisAwake":
+      return 2;
+    case "HKCategoryValueSleepAnalysisAsleepUnspecified":
+      return 1;
+    default:
+      return 0;
+  }
+}
+
+function sleepSourceRank(source = "") {
+  const normalized = source.toLowerCase();
+  if (normalized.includes("apple watch")) return 300;
+  if (normalized.includes("iphone")) return 250;
+  if (normalized === "health") return 200;
+  if (normalized.includes("autosleep")) return 100;
+  return 50;
+}
+
+function stepSourceRank(source = "") {
+  const normalized = source.toLowerCase();
+  if (normalized.includes("apple watch")) return 300;
+  if (normalized.includes("iphone")) return 200;
+  if (normalized === "health") return 150;
+  return 100;
+}
+
+function restingHRSourceRank(source = "") {
+  const normalized = source.toLowerCase();
+  if (normalized.includes("apple watch")) return 300;
+  if (normalized.includes("iphone")) return 250;
+  if (normalized === "health") return 200;
+  if (normalized.includes("athlytic")) return 100;
+  return 50;
+}
+
+function keepBestSourceRecords(records, sourceRank) {
+  let bestRank = -Infinity;
+  for (const record of records) {
+    bestRank = Math.max(bestRank, sourceRank(record.source || "", record));
+  }
+  return records.filter((record) => sourceRank(record.source || "", record) === bestRank);
+}
+
+function dedupeExactRecords(records) {
+  const deduped = new Map();
+
+  for (const record of records) {
+    const value = Number(record.value);
+    const key = [
+      record.start || "",
+      record.end || "",
+      Number.isFinite(value) ? value.toFixed(4) : "",
+      record.unit || "",
+    ].join("|");
+
+    const existing = deduped.get(key);
+    if (!existing || sleepSourceRank(record.source) > sleepSourceRank(existing.source)) {
+      deduped.set(key, record);
+    }
+  }
+
+  return [...deduped.values()];
+}
+
+function sleepNightKey(endDate) {
+  const adjusted = new Date(endDate);
+  if (adjusted.getHours() >= 18) {
+    adjusted.setDate(adjusted.getDate() + 1);
+  }
+  return localDateKey(adjusted);
+}
+
+function localDateKey(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 function mean(arr) {
