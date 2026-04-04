@@ -53,6 +53,12 @@ npx aveil-health demo
 
 That's it. No install, no config, no signup.
 
+## How Aveil differs
+
+- **Open Wearables** is built for teams that want a wearable data layer they can plug into products and workflows. **Aveil** is for one person with an Apple Health export who wants local answers from a single CLI command — no server, Docker, or account setup.
+- **Health Data Export / AppleHealthData-style tools** help you extract or inspect raw Apple Health files. **Aveil** takes the same export and turns it into interpreted sleep, recovery, activity, and nutrition signals you can act on immediately.
+- **Correlation trackers like LogVariables** are for logging experiments and analyzing variables over time. **Aveil** is narrower and faster: import your existing Apple Health data, get concrete next-step signals, and generate a shareable Wrapped card without building a dashboard.
+
 ## What you get
 
 ```
