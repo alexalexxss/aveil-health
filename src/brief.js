@@ -430,7 +430,7 @@ function buildGenericFocus(primarySignal, days) {
   return {
     focusLabel: focusLabelForType(kind, { positive: false, scope: "generic" }),
     headline: `The clearest current health consult issue is ${title.toLowerCase()}`,
-    subheadline: `This brief keeps the consult tied to the strongest flagged issue instead of defaulting to sleep every time.`, 
+    subheadline: `This brief uses the strongest cross-domain signal across sleep, recovery, activity, and nutrition over the last ${days} days.`,  
     whatChanged: `Top signal: ${title}. ${detail}`,
     whyItMatters: whyItMattersForType(kind, { positive: false, scope: "generic" }),
     whatToAsk: askForType(kind, { positive: false, scope: "generic" }),
