@@ -18,9 +18,9 @@ Opens a dark-mode card in your browser with your score, health identity, stats, 
   <img src="assets/wrapped-demo.png" width="360" alt="Health Wrapped card example — The Optimizer" />
 </p>
 
-## Sleep & recovery consult brief
+## Health consult brief
 
-Generate a narrow, anomaly-first consult brief for sleep and recovery:
+Generate an anomaly-first health consult brief from the strongest signals in your Apple Health data:
 
 ```bash
 npx aveil-health brief export.zip --output examples/output/appointment-brief.html
@@ -32,10 +32,16 @@ The brief leads with four concrete questions above the fold:
 - what to ask
 - what to test next
 
-It is intentionally not a generic wellness report. The artifact is designed to help a sleep/recovery consult start with the anomaly instead of a score.
+It is intentionally not a generic wellness report. The artifact is designed to help a medical, coaching, or self-review consult start with the strongest issue instead of a score.
+
+For a narrower sleep-first version, use the dedicated sleep brief mode:
+
+```bash
+npx aveil-health sleep-brief export.zip --output examples/output/appointment-brief.html
+```
 
 <p align="center">
-  <img src="assets/appointment-brief-showcase.png" width="360" alt="Aveil sleep and recovery consult brief showcase" />
+  <img src="assets/appointment-brief-showcase.png" width="360" alt="Aveil health consult brief showcase" />
 </p>
 
 ## Get Started
@@ -64,11 +70,14 @@ npx aveil-health analyze export.xml --days 14
 # JSON output (pipe to jq, save, feed to other tools)
 npx aveil-health analyze export.xml --json > report.json
 
-# Sleep & recovery consult brief
+# Health consult brief
 npx aveil-health brief export.zip
 
 # Save the consult brief to a custom path
-npx aveil-health brief export.zip --output ~/Desktop/sleep-recovery-brief.html
+npx aveil-health brief export.zip --output ~/Desktop/health-consult-brief.html
+
+# Narrow sleep & recovery brief
+npx aveil-health sleep-brief export.zip --output ~/Desktop/sleep-recovery-brief.html
 
 # Wrapped card
 npx aveil-health wrapped export.zip
