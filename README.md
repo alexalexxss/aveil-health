@@ -4,6 +4,20 @@ Your Apple Health data, analyzed locally via CLI.
 
 One command to turn your data into a clear report — sleep stages, recovery readiness, activity trends, and nutrition signals (if you track food). Everything runs on your machine. Nothing leaves it.
 
+## Health Wrapped
+
+Generate a shareable card (think Spotify Wrapped, but for your health):
+
+```bash
+npx aveil-health wrapped export.zip
+```
+
+Opens a dark-mode card in your browser with your score, health identity, stats, and signals.
+
+<p align="center">
+  <img src="assets/wrapped-demo.png" width="360" alt="Health Wrapped card example — The Optimizer" />
+</p>
+
 ## Sleep & recovery consult brief
 
 Generate a narrow, anomaly-first consult brief for sleep and recovery:
@@ -22,25 +36,6 @@ It is intentionally not a generic wellness report. The artifact is designed to h
 
 <p align="center">
   <img src="assets/appointment-brief-showcase.png" width="360" alt="Aveil sleep and recovery consult brief showcase" />
-</p>
-
-Canonical launch assets in this repo:
-- `examples/output/appointment-brief.html`
-- `examples/output/appointment-brief.png`
-- `assets/appointment-brief-showcase.png`
-
-## Health Wrapped
-
-Generate a shareable card (think Spotify Wrapped, but for your health):
-
-```bash
-npx aveil-health wrapped export.zip
-```
-
-Opens a dark-mode card in your browser with your score, health identity, stats, and signals.
-
-<p align="center">
-  <img src="assets/wrapped-demo.png" width="360" alt="Health Wrapped card example — The Optimizer" />
 </p>
 
 ## Get Started
