@@ -41,7 +41,7 @@ function printUsage() {
     aveil-health analyze export.zip --days 14
     aveil-health analyze export.xml --json > report.json
     aveil-health brief export.zip --open
-    aveil-health brief export.zip --output ~/Desktop/doctor-brief.html
+    aveil-health brief export.zip --output ~/Desktop/sleep-recovery-brief.html
     aveil-health wrapped export.zip --period monthly
     aveil-health wrapped export.zip --period weekly
 

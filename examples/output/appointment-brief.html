@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aveil sleep & recovery consult brief</title>
+<style>
+  :root{
+    --bg:#f6f4ef;
+    --paper:#fffdf8;
+    --ink:#16130d;
+    --muted:#6f6558;
+    --border:#e7decd;
+    --accent:#4338ca;
+    --accent-soft:#ebe9fe;
+    --warn:#92400e;
+    --warn-soft:#fff4e5;
+    --good:#166534;
+    --good-soft:#ecfdf3;
+    --bad:#9f1239;
+    --bad-soft:#fff1f2;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    padding:32px;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    line-height:1.45;
+  }
+  .page{
+    max-width:980px;
+    margin:0 auto;
+    background:var(--paper);
+    border:1px solid var(--border);
+    border-radius:24px;
+    padding:36px;
+    box-shadow:0 18px 50px rgba(22,19,13,.08);
+  }
+  .eyebrow{
+    font-size:12px;
+    font-weight:700;
+    letter-spacing:.12em;
+    text-transform:uppercase;
+    color:var(--accent);
+    margin-bottom:10px;
+  }
+  .hero{
+    display:grid;
+    grid-template-columns:minmax(0,1.4fr) minmax(260px,.9fr);
+    gap:18px;
+    align-items:start;
+    margin-bottom:24px;
+  }
+  .hero h1{
+    margin:0 0 10px;
+    font-size:34px;
+    line-height:1.08;
+  }
+  .hero p{
+    margin:0;
+    color:var(--muted);
+    font-size:15px;
+  }
+  .hero-card{
+    border:1px solid var(--border);
+    border-radius:18px;
+    padding:18px;
+    background:#fff;
+  }
+  .hero-card h2{
+    margin:0 0 10px;
+    font-size:15px;
+  }
+  .hero-card ul{
+    margin:0;
+    padding-left:18px;
+    color:var(--muted);
+  }
+  .meta-row{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    margin:14px 0 0;
+  }
+  .chip{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    padding:7px 10px;
+    border-radius:999px;
+    background:#fff;
+    border:1px solid var(--border);
+    font-size:12px;
+    color:var(--muted);
+  }
+  .chip strong{color:var(--ink)}
+  .focus-grid{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:14px;
+    margin:18px 0 26px;
+  }
+  .focus-card{
+    border:1px solid var(--border);
+    border-radius:18px;
+    padding:18px;
+    background:#fff;
+  }
+  .focus-card h3{
+    margin:0 0 8px;
+    font-size:13px;
+    letter-spacing:.06em;
+    text-transform:uppercase;
+    color:var(--muted);
+  }
+  .focus-card p{
+    margin:0;
+    font-size:15px;
+  }
+  .section{
+    margin-top:24px;
+  }
+  .section-title{
+    margin:0 0 12px;
+    font-size:19px;
+  }
+  .section-subtitle{
+    margin:-2px 0 14px;
+    color:var(--muted);
+    font-size:14px;
+  }
+  .signal-list{
+    display:grid;
+    gap:12px;
+  }
+  .signal-card{
+    border:1px solid var(--border);
+    border-radius:16px;
+    padding:16px;
+    background:#fff;
+  }
+  .signal-top{
+    display:flex;
+    justify-content:space-between;
+    gap:12px;
+    align-items:flex-start;
+    margin-bottom:6px;
+  }
+  .signal-title{
+    font-size:16px;
+    font-weight:700;
+    margin:0;
+  }
+  .signal-detail{
+    margin:0;
+    color:var(--muted);
+    font-size:14px;
+  }
+  .badge{
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:.08em;
+    border-radius:999px;
+    padding:6px 9px;
+    white-space:nowrap;
+    border:1px solid transparent;
+  }
+  .badge-warning{background:var(--warn-soft); color:var(--warn); border-color:#f3d6b2}
+  .badge-positive{background:var(--good-soft); color:var(--good); border-color:#c8eed5}
+  .badge-neutral{background:var(--accent-soft); color:var(--accent); border-color:#d8d4fe}
+  .moves{
+    margin:10px 0 0;
+    padding-left:18px;
+    color:var(--muted);
+    font-size:14px;
+  }
+  table{
+    width:100%;
+    border-collapse:collapse;
+    background:#fff;
+    border:1px solid var(--border);
+    border-radius:16px;
+    overflow:hidden;
+  }
+  th,td{
+    padding:12px 14px;
+    text-align:left;
+    border-bottom:1px solid var(--border);
+    font-size:14px;
+    vertical-align:top;
+  }
+  th{
+    font-size:12px;
+    text-transform:uppercase;
+    letter-spacing:.08em;
+    color:var(--muted);
+    background:#faf7f1;
+  }
+  tr:last-child td{border-bottom:none}
+  .footer-note{
+    margin-top:24px;
+    padding-top:16px;
+    border-top:1px solid var(--border);
+    color:var(--muted);
+    font-size:12px;
+  }
+  @media (max-width:800px){
+    body{padding:16px}
+    .page{padding:22px;border-radius:18px}
+    .hero,.focus-grid{grid-template-columns:1fr}
+    h1{font-size:28px}
+    table,thead,tbody,th,td,tr{display:block}
+    thead{display:none}
+    tr{border-bottom:1px solid var(--border)}
+    td{padding:8px 14px}
+    td::before{
+      content:attr(data-label);
+      display:block;
+      font-size:11px;
+      color:var(--muted);
+      text-transform:uppercase;
+      letter-spacing:.08em;
+      margin-bottom:2px;
+    }
+  }
+  @media print{
+    body{padding:0;background:#fff}
+    .page{box-shadow:none;border:none;max-width:none;border-radius:0;padding:18px}
+  }
+</style>
+</head>
+<body>
+  <div class="page">
+    <div class="eyebrow">Aveil sleep & recovery consult brief</div>
+
+    <div class="hero">
+      <div>
+        <h1>Sleep duration is the clearest anomaly, and recovery is not fully covering for it</h1>
+        <p>This is designed as a sleep/recovery consult brief for the last 30 days of Apple Health data.</p>
+        <div class="meta-row">
+          <span class="chip"><strong>Window</strong> last 30 days</span>
+          <span class="chip"><strong>Generated</strong> Apr 6, 2026</span>
+          <span class="chip"><strong>Focus</strong> sleep debt</span>
+        </div>
+      </div>
+      <div class="hero-card">
+        <h2>Use this brief in a sleep/recovery consult</h2>
+        <ul>
+          <li>Lead with the anomaly, not the score.</li>
+          <li>Use the evidence table to anchor the discussion.</li>
+          <li>Leave with one question and one testable next step.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="focus-grid">
+      <div class="focus-card"><h3>What changed</h3><p>Last night was 6h 26m against an average around 7h 1m, with a declining trend.</p></div>
+      <div class="focus-card"><h3>Why it matters</h3><p>Short sleep plus only middling recovery is the pattern most likely to explain lower energy, slower recovery, and recurring wake-up complaints.</p></div>
+      <div class="focus-card"><h3>What to ask</h3><p>Ask whether the main driver looks like insufficient time in bed, fragmented sleep, or a downstream issue that is suppressing sleep quality and recovery together.</p></div>
+      <div class="focus-card"><h3>What to test next</h3><p>Run a one-week sleep-protection block: tighter bedtime, earlier final meal, and reduced late stimulation, then compare sleep duration, deep sleep, and HRV.</p></div>
+    </div>
+
+    <div class="section">
+      <h2 class="section-title">Signals to bring into the consult</h2>
+      <p class="section-subtitle">These are the strongest sleep/recovery leads from the recent Apple Health window.</p>
+      <div class="signal-list">
+        <div class="signal-card">
+    <div class="signal-top">
+      <p class="signal-title">Sleep duration is below target</p>
+      <span class="badge badge-warning">needs attention</span>
+    </div>
+    <p class="signal-detail">Average sleep has slipped below the recent baseline while recovery is only moderate.</p>
+    <ul class="moves"><li>Protect sleep timing for the next 7 days.</li></ul>
+  </div>
+<div class="signal-card">
+    <div class="signal-top">
+      <p class="signal-title">Recovery is softer than baseline</p>
+      <span class="badge badge-warning">needs attention</span>
+    </div>
+    <p class="signal-detail">HRV is lower than the recent average and the recovery trend is declining.</p>
+    <ul class="moves"><li>Reduce recovery noise and re-check HRV next week.</li></ul>
+  </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2 class="section-title">Sleep and recovery evidence</h2>
+      <p class="section-subtitle">Use this table to ground the conversation in concrete recent data instead of a generic wellness score.</p>
+      <table>
+        <thead>
+          <tr>
+            <th>Metric</th>
+            <th>Latest</th>
+            <th>Baseline</th>
+            <th>Context</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+    <td data-label="Metric">Sleep duration</td>
+    <td data-label="Latest">6h 26m</td>
+    <td data-label="Baseline">7h 1m</td>
+    <td data-label="Context">Sleep trend: declining.</td>
+  </tr>
+<tr>
+    <td data-label="Metric">Deep sleep</td>
+    <td data-label="Latest">58m</td>
+    <td data-label="Baseline">1h 9m</td>
+    <td data-label="Context">Lower deep sleep can weaken recovery even when total sleep looks acceptable.</td>
+  </tr>
+<tr>
+    <td data-label="Metric">REM sleep</td>
+    <td data-label="Latest">1h 11m</td>
+    <td data-label="Baseline">1h 25m</td>
+    <td data-label="Context">REM gives context on sleep quality and continuity, not just time in bed.</td>
+  </tr>
+<tr>
+    <td data-label="Metric">Sleep start</td>
+    <td data-label="Latest">5:18 PM</td>
+    <td data-label="Baseline">11:36 PM</td>
+    <td data-label="Context">Recent variability is about ±1.2 hours.</td>
+  </tr>
+<tr>
+    <td data-label="Metric">HRV</td>
+    <td data-label="Latest">49 ms</td>
+    <td data-label="Baseline">61 ms avg</td>
+    <td data-label="Context">Recovery trend: declining.</td>
+  </tr>
+<tr>
+    <td data-label="Metric">Resting HR</td>
+    <td data-label="Latest">—</td>
+    <td data-label="Baseline">58 bpm avg</td>
+    <td data-label="Context">Use alongside HRV and sleep duration, not in isolation.</td>
+  </tr>
+<tr>
+    <td data-label="Metric">Recovery score</td>
+    <td data-label="Latest">63/100</td>
+    <td data-label="Baseline">68/100 component</td>
+    <td data-label="Context">Useful as a summary only after you inspect the sleep and HRV drivers above.</td>
+  </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="footer-note">
+      Generated from Apple Health data via Aveil. This brief is a structured handoff for a sleep/recovery consult and is not a medical diagnosis.
+    </div>
+  </div>
+</body>
+</html>

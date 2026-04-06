@@ -4,22 +4,25 @@ Your Apple Health data, analyzed locally via CLI.
 
 One command to turn your data into a clear report — sleep stages, recovery readiness, activity trends, and nutrition signals (if you track food). Everything runs on your machine. Nothing leaves it.
 
-## Appointment-ready health brief
+## Sleep & recovery consult brief
 
-Generate a clear one-page brief for a doctor visit, coach check-in, or self-review:
+Generate a narrow, anomaly-first consult brief for sleep and recovery:
 
 ```bash
-npx aveil-health brief export.zip
+npx aveil-health brief export.zip --output examples/output/appointment-brief.html
 ```
 
-It outputs a self-contained HTML file with:
-- the main watchouts and strongest signals
-- a key metrics table for sleep, recovery, activity, and protein
-- a short list of questions worth discussing next
+The brief leads with four concrete questions above the fold:
+- what changed
+- why it matters
+- what to ask
+- what to test next
 
-Open it in your browser, print to PDF if needed, or screenshot the top section for launch posting.
+It is intentionally not a generic wellness report. The artifact is designed to help a sleep/recovery consult start with the anomaly instead of a score.
 
-Launch-safe example output in this repo: `assets/brief-demo.html`
+Canonical launch assets in this repo:
+- `examples/output/appointment-brief.html`
+- `examples/output/appointment-brief.png`
 
 ## Health Wrapped
 
@@ -61,11 +64,11 @@ npx aveil-health analyze export.xml --days 14
 # JSON output (pipe to jq, save, feed to other tools)
 npx aveil-health analyze export.xml --json > report.json
 
-# Appointment-ready brief
+# Sleep & recovery consult brief
 npx aveil-health brief export.zip
 
-# Save the brief to a custom path
-npx aveil-health brief export.zip --output ~/Desktop/doctor-brief.html
+# Save the consult brief to a custom path
+npx aveil-health brief export.zip --output ~/Desktop/sleep-recovery-brief.html
 
 # Wrapped card
 npx aveil-health wrapped export.zip
