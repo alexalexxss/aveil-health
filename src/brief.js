@@ -351,7 +351,7 @@ function renderConsultBrief({
       <div class="hero-card">
         <h2>${mode === "sleep" ? "Use this in a sleep/recovery consult" : "Use this in a health consult"}</h2>
         <ul>
-          <li>Lead with the strongest signal, not the score.</li>
+          <li>Lead with the strongest signal, not a summary number.</li>
           <li>Use the evidence table to anchor the discussion.</li>
           <li>Leave with one question and one testable next step.</li>
         </ul>
@@ -375,7 +375,7 @@ function renderConsultBrief({
 
     <div class="section">
       <h2 class="section-title">${mode === "sleep" ? "Sleep and recovery evidence" : "Evidence table"}</h2>
-      <p class="section-subtitle">Ground the conversation in concrete recent data instead of a generic wellness score.</p>
+      <p class="section-subtitle">Ground the conversation in concrete recent data.</p>
       <table>
         <thead>
           <tr>
@@ -413,14 +413,14 @@ function buildGenericFocus(primarySignal, days) {
   const acute = primary.level === "warning" || primary.level === "neutral";
   const title = primary.title || "No acute anomaly was flagged";
   const detail = primary.detail || "The current strongest pattern is worth validating against symptoms and routine.";
-  const move = primary.move || "Repeat the brief after one week to see whether the pattern holds.";
+  const move = primary.move || "Generate a new brief after one week to see whether the pattern holds.";
 
   if (kind === "all_clear" || positive) {
     return {
       focusLabel: focusLabelForType(kind, { positive, scope: "generic" }),
       headline: `No acute anomaly. The strongest current pattern is ${title.toLowerCase()}`,
-      subheadline: `This generic brief uses the strongest cross-domain signal across sleep, recovery, activity, and nutrition over the last ${days} days.`,
-      whatChanged: `Top signal: ${title}. ${detail}`,
+      subheadline: `This brief uses the strongest cross-domain signal across sleep, recovery, activity, and nutrition over the last ${days} days.`,
+      whatChanged: `Top signal: ${title}. ${detail}`, 
       whyItMatters: whyItMattersForType(kind, { positive, scope: "generic" }),
       whatToAsk: askForType(kind, { positive, scope: "generic" }),
       whatToTestNext: move,
@@ -444,7 +444,7 @@ function buildSleepFocus(primarySignal, days) {
   const positive = primary.level === "positive";
   const title = primary.title || "No acute sleep/recovery anomaly was flagged";
   const detail = primary.detail || "The current strongest sleep/recovery pattern is worth validating against symptoms and routine.";
-  const move = primary.move || "Repeat the sleep brief after one week to compare against the current baseline.";
+  const move = primary.move || "Generate a new sleep brief after one week to compare against the current baseline.";
 
   if (kind === "all_clear" || positive) {
     return {
@@ -782,7 +782,7 @@ function renderStableBackgroundSection(items) {
 
   return `<div class="secondary-section">
     <h2>Other signals look stable</h2>
-    <p>This stays secondary on purpose. These background metrics help show the rest of the picture looks fine, so the consult can stay focused on the main signal.</p>
+    <p>This stays secondary on purpose. It shows the broader picture is relatively stable so the consult can stay focused on the main issue.</p>
     <div class="secondary-grid">
       ${items.map((item) => `<div class="secondary-chip"><span class="secondary-label">${escapeHtml(item.label)}</span><span class="secondary-value">${escapeHtml(item.value)}</span></div>`).join("")}
     </div>
@@ -932,7 +932,7 @@ function askForType(type, { positive }) {
   switch (type) {
     case "sleep_consistency":
       return positive
-        ? "Ask which part of the routine is most responsible for the stable schedule, and what would be the earliest sign that it is slipping."
+        ? "Ask which recent schedule anchors or habits might best explain the stable timing, so they can be preserved if symptoms return."
         : "Ask whether the main issue is circadian drift, inconsistent time in bed, or fragmentation after sleep onset.";
     case "recovery_low":
       return positive
@@ -940,19 +940,19 @@ function askForType(type, { positive }) {
         : "Ask whether the recovery dip looks more like under-recovery, illness/stress load, or sleep quality deterioration.";
     case "sleep_quality":
       return positive
-        ? "Ask which part of the current routine is most worth preserving because it seems to support sleep quality."
+        ? "Ask which recent habits, timing changes, or conditions might best explain the stronger sleep quality, so the useful ones can be preserved."
         : "Ask whether the quality problem is more about awakenings, breathing, bedtime timing, or sleep opportunity.";
     case "deep_sleep_deficit":
       return positive
-        ? "Ask what seems to support deep sleep so you can preserve it under stress or travel."
+        ? "Ask which recent conditions or habits seem most likely to support deeper sleep, so they can be preserved under stress or travel."
         : "Ask whether the deep-sleep drop is being driven by schedule drift, late meals, alcohol, stress, or sleep fragmentation.";
     case "activity_low":
       return positive
-        ? "Ask which habit is most responsible for keeping the movement floor up."
+        ? "Ask which recent habits or constraints are most likely keeping movement consistently up."
         : "Ask whether the main issue is total movement floor, structured exercise frequency, or inactivity between workouts.";
     case "protein_lag":
       return positive
-        ? "Ask which meal pattern is most responsible for keeping intake stable."
+        ? "Ask which parts of the current eating pattern are most likely keeping protein intake stable."
         : "Ask whether intake is too low overall, protein timing is off, or the current food pattern is too inconsistent to support recovery.";
     case "all_clear":
       return "Ask which single metric would be most useful to monitor next so the next brief can detect change earlier.";
@@ -969,7 +969,7 @@ function humanizeLevel(level) {
     case "warning":
       return "needs attention";
     case "positive":
-      return "supportive";
+      return "favorable";
     default:
       return "context";
   }
