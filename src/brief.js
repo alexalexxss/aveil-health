@@ -349,65 +349,59 @@ function renderMetricRow(row) {
 }
 
 function buildConsultFocus(report, days) {
-  const sleep = report.sleep || {};
-  const recovery = report.recovery || {};
   const relevantSignals = buildRelevantSignals(report);
   const primary = relevantSignals[0];
-  const sleepAvg = sleep.averages?.durationMinutes;
-  const lastNightMinutes = sleep.lastNight?.totalMinutes;
-  const averageHRV = recovery.averageHRV;
-  const latestHRV = recovery.latestHRV;
-  const sleepTrend = describeTrend(sleep.trend);
-  const recoveryTrend = describeTrend(recovery.trend);
   const normalizedType = normalizeSignalType(primary?.type);
+  const isPositive = primary?.level === "positive";
+  const isWarning = primary?.level === "warning";
+  const signalTitle = primary?.title || "No acute sleep/recovery anomaly was flagged";
+  const signalDetail = primary?.detail || "The current strongest pattern is worth validating against symptoms and routine.";
+  const signalMove = primary?.move || "Repeat the brief after one week to confirm whether the pattern holds.";
 
-  if (normalizedType === "sleep_consistency") {
-    return {
-      focusLabel: "bedtime drift",
-      headline: "Sleep timing drift is the clearest recovery lead right now",
-      subheadline: `This brief narrows the consult to schedule consistency and its recovery effects across the last ${days} days.`,
-      whatChanged: `Bedtime consistency is off${sleep.averages?.bedtimeVariability != null ? ` at about ±${sleep.averages.bedtimeVariability.toFixed(1)} hours` : ""}${sleepTrend ? `, with a ${sleepTrend} sleep trend` : ""}.`,
-      whyItMatters: "When sleep timing drifts, total sleep, deep sleep, and next-day recovery can all become noisier even if some nights still look acceptable.",
-      whatToAsk: "Ask whether the main problem is circadian drift, inconsistent time in bed, or fragmentation after sleep onset.",
-      whatToTestNext: "For one week, lock bedtime and wake time into a tighter 30-minute band and track whether total sleep, wake-ups, and HRV stabilize.",
-    };
-  }
-
-  if (normalizedType === "recovery_low") {
-    return {
-      focusLabel: "recovery dip",
-      headline: "Recovery is softer than baseline and sleep is the first place to investigate",
-      subheadline: `This brief is structured for a sleep/recovery consult, not a generic wellness review.`,
-      whatChanged: `${latestHRV != null ? `Latest HRV is ${latestHRV} ms` : "Recovery markers are soft"}${averageHRV != null ? ` versus a recent average around ${averageHRV} ms` : ""}${recoveryTrend ? `, with a ${recoveryTrend} recovery trend` : ""}.`,
-      whyItMatters: "When recovery stays soft, training tolerance, sleep quality, and day-to-day readiness can all become less predictable.",
-      whatToAsk: "Ask whether the signal looks more like under-recovery, illness/stress load, or sleep quality degradation that is pulling recovery down.",
-      whatToTestNext: "Reduce recovery noise for 5-7 days: keep training submaximal, hold sleep timing steady, and watch whether HRV and perceived recovery rebound.",
-    };
-  }
-
-  if (normalizedType === "all_clear") {
+  if (!primary || normalizedType === "all_clear") {
     return {
       focusLabel: "baseline review",
-      headline: "No single red flag dominates, so use the consult to pressure-test the baseline",
-      subheadline: `The brief still narrows the conversation to sleep and recovery instead of a full lifestyle review.`,
-      whatChanged: `No major sleep/recovery anomaly was flagged in the last ${days} days, but the current baseline is now the thing to validate.`,
-      whyItMatters: "A stable baseline is useful only if it matches symptoms, recovery, and actual performance, not just the dashboard average.",
-      whatToAsk: "Ask which metric matters most to track going forward: total sleep, wake-ups, HRV, or bedtime consistency.",
-      whatToTestNext: "Pick one measurable lever, keep it stable for a week, and use the brief again to compare before versus after.",
+      headline: "No acute anomaly, so use the consult to validate the strongest current pattern",
+      subheadline: `This brief narrows the conversation to sleep and recovery over the last ${days} days instead of forcing a generic wellness narrative.`,
+      whatChanged: `Strongest pattern: ${signalTitle}. ${signalDetail}`,
+      whyItMatters: "Trust drops when the narrative invents a problem that the data does not show. This framing stays anchored to what the report actually flagged.",
+      whatToAsk: "Ask whether the strongest current pattern matches real symptoms, recovery, and day-to-day functioning, or whether something important is still missing from the data.",
+      whatToTestNext: signalMove,
     };
   }
 
-  const avgSleepLabel = sleepAvg != null ? formatDuration(sleepAvg) : "recent baseline";
-  const lastNightLabel = lastNightMinutes != null ? formatDuration(lastNightMinutes) : null;
+  if (isPositive) {
+    return {
+      focusLabel: focusLabelForType(normalizedType, true),
+      headline: `No acute anomaly. The strongest current pattern is ${signalTitle.toLowerCase()}`,
+      subheadline: `The goal of this consult is to explain what appears to be working and pressure-test whether that baseline is real.`,
+      whatChanged: `Top signal: ${signalTitle}. ${signalDetail}`,
+      whyItMatters: whyItMattersForSignal(normalizedType, true),
+      whatToAsk: askForSignal(normalizedType, true),
+      whatToTestNext: signalMove,
+    };
+  }
+
+  if (isWarning) {
+    return {
+      focusLabel: focusLabelForType(normalizedType, false),
+      headline: `The clearest sleep/recovery anomaly right now is ${signalTitle.toLowerCase()}`,
+      subheadline: `This brief leads the consult with the strongest flagged issue from the recent data instead of a generic score summary.`,
+      whatChanged: `Top signal: ${signalTitle}. ${signalDetail}`,
+      whyItMatters: whyItMattersForSignal(normalizedType, false),
+      whatToAsk: askForSignal(normalizedType, false),
+      whatToTestNext: signalMove,
+    };
+  }
 
   return {
-    focusLabel: "sleep debt",
-    headline: "Sleep duration is the clearest anomaly, and recovery is not fully covering for it",
-    subheadline: `This is designed as a sleep/recovery consult brief for the last ${days} days of Apple Health data.`,
-    whatChanged: `${lastNightLabel ? `Last night was ${lastNightLabel}` : "Recent sleep has run short"}${sleepAvg != null ? ` against an average around ${avgSleepLabel}` : ""}${sleepTrend ? `, with a ${sleepTrend} trend` : ""}.`,
-    whyItMatters: "Short sleep plus only middling recovery is the pattern most likely to explain lower energy, slower recovery, and recurring wake-up complaints.",
-    whatToAsk: "Ask whether the main driver looks like insufficient time in bed, fragmented sleep, or a downstream issue that is suppressing sleep quality and recovery together.",
-    whatToTestNext: "Run a one-week sleep-protection block: tighter bedtime, earlier final meal, and reduced late stimulation, then compare sleep duration, deep sleep, and HRV.",
+    focusLabel: focusLabelForType(normalizedType, false),
+    headline: `The strongest current pattern is ${signalTitle.toLowerCase()}`,
+    subheadline: `This consult brief stays tied to the top signal from the actual report instead of trying to force a stronger claim than the data supports.`,
+    whatChanged: `Top signal: ${signalTitle}. ${signalDetail}`,
+    whyItMatters: whyItMattersForSignal(normalizedType, false),
+    whatToAsk: askForSignal(normalizedType, false),
+    whatToTestNext: signalMove,
   };
 }
 
@@ -520,10 +514,11 @@ function normalizeSignalType(type) {
     case "recovery_low":
     case "recovery_readiness":
       return "recovery_low";
+    case "sleep_quality":
+      return "sleep_quality";
     case "all_clear":
       return "all_clear";
     case "deep_sleep_deficit":
-    case "sleep_quality":
     case "sleep_debt":
     default:
       return "sleep_debt";
@@ -568,6 +563,70 @@ function humanizeLevel(level) {
       return "supportive";
     default:
       return "context";
+  }
+}
+
+function focusLabelForType(type, positive) {
+  switch (type) {
+    case "sleep_consistency":
+      return positive ? "stable schedule" : "bedtime drift";
+    case "recovery_low":
+      return positive ? "recovery support" : "recovery dip";
+    case "sleep_quality":
+      return positive ? "strong sleep quality" : "sleep quality drop";
+    case "all_clear":
+      return "baseline review";
+    case "sleep_debt":
+    default:
+      return positive ? "sleep baseline" : "sleep debt";
+  }
+}
+
+function whyItMattersForSignal(type, positive) {
+  switch (type) {
+    case "sleep_consistency":
+      return positive
+        ? "Stable sleep timing is often the hidden input holding recovery together, so it is worth identifying what is preserving it."
+        : "Sleep timing drift can make total sleep and recovery noisy even when a few nights still look decent on paper.";
+    case "recovery_low":
+      return positive
+        ? "Supportive recovery means the current sleep/recovery setup may actually be working, which is useful to preserve before changing variables."
+        : "Soft recovery can reduce training tolerance and make symptoms feel worse even before average sleep duration collapses.";
+    case "sleep_quality":
+      return positive
+        ? "Good sleep quality with solid stage balance is a real asset, but only if it matches symptoms and daytime functioning."
+        : "Poor sleep quality can hide inside acceptable total sleep numbers and still drag recovery down.";
+    case "all_clear":
+      return "The absence of a sharp anomaly is still informative, but only if the brief stays honest about that instead of manufacturing urgency.";
+    case "sleep_debt":
+    default:
+      return positive
+        ? "A stable sleep baseline matters because it gives you something concrete to preserve and compare against if symptoms change later."
+        : "Short sleep is the most likely driver to test first when energy, recovery, or wake-up quality feels off.";
+  }
+}
+
+function askForSignal(type, positive) {
+  switch (type) {
+    case "sleep_consistency":
+      return positive
+        ? "Ask which part of the routine is most responsible for the stable schedule, and what would be the earliest sign that it is slipping."
+        : "Ask whether the main issue is circadian drift, inconsistent time in bed, or fragmentation after sleep onset.";
+    case "recovery_low":
+      return positive
+        ? "Ask whether the recovery strength matches how training and mornings actually feel, or if the data is missing a meaningful stressor."
+        : "Ask whether the recovery dip looks more like under-recovery, illness/stress load, or sleep quality deterioration.";
+    case "sleep_quality":
+      return positive
+        ? "Ask which variable is most worth preserving because it seems to support the strong sleep pattern, rather than changing several things at once."
+        : "Ask whether the quality problem is more about awakenings, breathing, bedtime timing, or sleep opportunity.";
+    case "all_clear":
+      return "Ask which single metric would be most useful to monitor next so the next brief can detect change earlier.";
+    case "sleep_debt":
+    default:
+      return positive
+        ? "Ask whether the stable baseline is enough for current goals, or whether symptoms suggest a hidden problem despite acceptable averages."
+        : "Ask whether the short-sleep pattern comes from insufficient time in bed, fragmented sleep, or a downstream issue suppressing quality.";
   }
 }
 

@@ -65,7 +65,62 @@ test("generateAppointmentBriefHTML renders anomaly-first sleep/recovery consult 
   assert.match(html, /Why it matters/);
   assert.match(html, /What to ask/);
   assert.match(html, /What to test next/);
-  assert.match(html, /Sleep duration is the clearest anomaly/);
+  assert.match(html, /The clearest sleep\/recovery anomaly right now is sleep duration is below target/i);
+  assert.match(html, /Top signal: Sleep duration is below target\./);
   assert.doesNotMatch(html, /doctor, coach, or self-review/i);
   assert.doesNotMatch(html, /Overall score/i);
+});
+
+test("generateAppointmentBriefHTML uses truthful fallback when the top signal is positive", () => {
+  const report = {
+    overall: {
+      score: 84,
+      components: [
+        { name: "recovery", score: 82 },
+      ],
+    },
+    sleep: {
+      available: true,
+      trend: "stable",
+      lastNight: {
+        totalMinutes: 430,
+        deepMinutes: 87,
+        remMinutes: 111,
+        sleepStart: "2026-04-05T23:18:00.000Z",
+      },
+      averages: {
+        durationMinutes: 429,
+        deepMinutes: 86,
+        remMinutes: 109,
+        bedtimeHour: 23.3,
+        bedtimeVariability: 0.4,
+      },
+    },
+    recovery: {
+      available: true,
+      trend: "improving",
+      latestHRV: 120,
+      averageHRV: 111,
+      averageRHR: 54,
+      recoveryScore: 86,
+    },
+    signals: [
+      {
+        type: "sleep_quality",
+        level: "positive",
+        title: "Sleep: 7.2h (good)",
+        detail: "Deep 87m · REM 111m · Core 231m",
+        moves: ["Sleep looks solid, so preserve the routine before changing variables."],
+      },
+    ],
+  };
+
+  const { html } = generateAppointmentBriefHTML(report, {
+    generatedAt: "2026-04-06T12:00:00.000Z",
+    days: 30,
+  });
+
+  assert.match(html, /No acute anomaly\./);
+  assert.match(html, /Top signal: Sleep: 7\.2h \(good\)\./);
+  assert.doesNotMatch(html, /The clearest sleep\/recovery anomaly/i);
 });
