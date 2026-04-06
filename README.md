@@ -4,6 +4,23 @@ Your Apple Health data, analyzed locally via CLI.
 
 One command to turn your data into a clear report — sleep stages, recovery readiness, activity trends, and nutrition signals (if you track food). Everything runs on your machine. Nothing leaves it.
 
+## Appointment-ready health brief
+
+Generate a clear one-page brief for a doctor visit, coach check-in, or self-review:
+
+```bash
+npx aveil-health brief export.zip
+```
+
+It outputs a self-contained HTML file with:
+- the main watchouts and strongest signals
+- a key metrics table for sleep, recovery, activity, and protein
+- a short list of questions worth discussing next
+
+Open it in your browser, print to PDF if needed, or screenshot the top section for launch posting.
+
+Launch-safe example output in this repo: `assets/brief-demo.html`
+
 ## Health Wrapped
 
 Generate a shareable card (think Spotify Wrapped, but for your health):
@@ -43,6 +60,12 @@ npx aveil-health analyze export.xml --days 14
 
 # JSON output (pipe to jq, save, feed to other tools)
 npx aveil-health analyze export.xml --json > report.json
+
+# Appointment-ready brief
+npx aveil-health brief export.zip
+
+# Save the brief to a custom path
+npx aveil-health brief export.zip --output ~/Desktop/doctor-brief.html
 
 # Wrapped card
 npx aveil-health wrapped export.zip
