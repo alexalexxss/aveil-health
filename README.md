@@ -20,9 +20,14 @@ The brief leads with four concrete questions above the fold:
 
 It is intentionally not a generic wellness report. The artifact is designed to help a sleep/recovery consult start with the anomaly instead of a score.
 
+<p align="center">
+  <img src="assets/appointment-brief-showcase.png" width="360" alt="Aveil sleep and recovery consult brief showcase" />
+</p>
+
 Canonical launch assets in this repo:
 - `examples/output/appointment-brief.html`
 - `examples/output/appointment-brief.png`
+- `assets/appointment-brief-showcase.png`
 
 ## Health Wrapped
 
