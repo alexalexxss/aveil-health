@@ -294,7 +294,7 @@ function generateSignals(sleep, activity, recovery, nutrition) {
       type: "sleep_quality",
       level: quality === "good" ? "positive" : quality === "fair" ? "neutral" : "warning",
       title: `Sleep: ${totalHrs}h (${quality})`,
-      detail: `Deep ${ln.deepMinutes}m · REM ${ln.remMinutes}m · Core ${ln.coreMinutes}m`,
+      detail: `Deep ${formatMinutesHuman(ln.deepMinutes)} · REM ${formatMinutesHuman(ln.remMinutes)} · Core ${formatMinutesHuman(ln.coreMinutes)}`,
       moves: quality === "poor"
         ? ["Prioritize 7+ hours tonight", "Consider earlier bedtime"]
         : quality === "fair"
@@ -307,7 +307,7 @@ function generateSignals(sleep, activity, recovery, nutrition) {
       signals.push({
         type: "deep_sleep_deficit",
         level: "warning",
-        title: `Deep sleep averaging ${sleep.averages.deepMinutes}m (target: 45+)`,
+        title: `Deep sleep averaging ${formatMinutesHuman(sleep.averages.deepMinutes)} (target: 45+)`,
         detail: `14-night average. Low deep sleep impacts recovery, memory, and hormones.`,
         moves: ["Cool room to 65-68°F", "Avoid alcohol within 3h of bed", "Consistent bedtime ±30min"],
       });
@@ -581,6 +581,15 @@ function trendDirection(values) {
 function round(v, decimals = 0) {
   const f = 10 ** decimals;
   return Math.round(v * f) / f;
+}
+
+function formatMinutesHuman(minutes) {
+  if (minutes == null || Number.isNaN(minutes)) return "—";
+  const rounded = Math.round(minutes);
+  if (rounded < 60) return `${rounded}m`;
+  const hours = Math.floor(rounded / 60);
+  const mins = rounded % 60;
+  return mins === 0 ? `${hours}h` : `${hours}h ${mins}m`;
 }
 
 // ─── Recommendations (time-aware) ───
