@@ -32,12 +32,16 @@ The brief leads with four concrete questions above the fold:
 - what to ask
 - what to test next
 
-It is intentionally not a generic wellness report. The artifact is designed to help a medical, coaching, or self-review consult start with the strongest issue instead of a score.
+It is intentionally not a generic wellness report. The artifact is designed to help a consult start with the strongest issue instead of a score.
+
+Canonical example output in this repo:
+- `examples/output/appointment-brief.html`
+- `assets/appointment-brief-showcase.png`
 
 For a narrower sleep-first version, use the dedicated sleep brief mode:
 
 ```bash
-npx aveil-health sleep-brief export.zip --output examples/output/appointment-brief.html
+npx aveil-health sleep-brief export.zip --output ~/Desktop/sleep-recovery-brief.html
 ```
 
 <p align="center">

@@ -1,14 +1,62 @@
 /**
- * Generate a narrow, appointment-ready Aveil sleep & recovery consult brief
- * as self-contained HTML.
+ * Shared consult brief renderer for generic and sleep-focused modes.
  */
 
-export function generateAppointmentBriefHTML(report, options = {}) {
-  const generatedAt = options.generatedAt ? new Date(options.generatedAt) : new Date();
+export function generateHealthConsultBriefHTML(report, options = {}) {
   const days = Number.isFinite(options.days) ? options.days : 30;
-  const focus = buildConsultFocus(report, days);
-  const metrics = buildMetricRows(report);
-  const signals = buildRelevantSignals(report);
+  const generatedAt = options.generatedAt ? new Date(options.generatedAt) : new Date();
+  const primarySignal = pickPrimarySignal(report?.signals, { scope: "generic" });
+  const displaySignals = buildDisplaySignals(report, { scope: "generic" });
+
+  return renderConsultBrief({
+    mode: "generic",
+    title: "Aveil health consult brief",
+    eyebrow: "Aveil health consult brief",
+    filenamePrefix: "aveil-health-consult-brief",
+    generatedAt,
+    days,
+    focus: buildGenericFocus(primarySignal, days),
+    signals: displaySignals,
+    metrics: buildMetricRows(report, primarySignal, { scope: "generic" }),
+    stableItems: buildStableBackgroundMetrics(report, { primarySignal }),
+  });
+}
+
+export function generateSleepConsultBriefHTML(report, options = {}) {
+  const days = Number.isFinite(options.days) ? options.days : 30;
+  const generatedAt = options.generatedAt ? new Date(options.generatedAt) : new Date();
+  const primarySignal = pickPrimarySignal(report?.signals, { scope: "sleep" });
+  const displaySignals = buildDisplaySignals(report, { scope: "sleep" });
+
+  return renderConsultBrief({
+    mode: "sleep",
+    title: "Aveil sleep & recovery consult brief",
+    eyebrow: "Aveil sleep & recovery consult brief",
+    filenamePrefix: "aveil-sleep-recovery-brief",
+    generatedAt,
+    days,
+    focus: buildSleepFocus(primarySignal, days),
+    signals: displaySignals,
+    metrics: buildMetricRows(report, primarySignal, { scope: "sleep" }),
+    stableItems: buildStableBackgroundMetrics(report, { primarySignal }),
+  });
+}
+
+// Back-compat alias for the default brief generator.
+export const generateAppointmentBriefHTML = generateHealthConsultBriefHTML;
+
+function renderConsultBrief({
+  mode,
+  title,
+  eyebrow,
+  filenamePrefix,
+  generatedAt,
+  days,
+  focus,
+  signals,
+  metrics,
+  stableItems,
+}) {
   const dateLabel = generatedAt.toLocaleDateString("en-US", {
     year: "numeric",
     month: "short",
@@ -20,7 +68,7 @@ export function generateAppointmentBriefHTML(report, options = {}) {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Aveil sleep & recovery consult brief</title>
+<title>${escapeHtml(title)}</title>
 <style>
   :root{
     --bg:#f6f4ef;
@@ -34,8 +82,6 @@ export function generateAppointmentBriefHTML(report, options = {}) {
     --warn-soft:#fff4e5;
     --good:#166534;
     --good-soft:#ecfdf3;
-    --bad:#9f1239;
-    --bad-soft:#fff1f2;
   }
   *{box-sizing:border-box}
   body{
@@ -290,7 +336,7 @@ export function generateAppointmentBriefHTML(report, options = {}) {
 </head>
 <body>
   <div class="page">
-    <div class="eyebrow">Aveil sleep & recovery consult brief</div>
+    <div class="eyebrow">${escapeHtml(eyebrow)}</div>
 
     <div class="hero">
       <div>
@@ -303,9 +349,9 @@ export function generateAppointmentBriefHTML(report, options = {}) {
         </div>
       </div>
       <div class="hero-card">
-        <h2>Use this brief in a sleep/recovery consult</h2>
+        <h2>${mode === "sleep" ? "Use this in a sleep/recovery consult" : "Use this in a health consult"}</h2>
         <ul>
-          <li>Lead with the anomaly, not the score.</li>
+          <li>Lead with the strongest signal, not the score.</li>
           <li>Use the evidence table to anchor the discussion.</li>
           <li>Leave with one question and one testable next step.</li>
         </ul>
@@ -320,16 +366,16 @@ export function generateAppointmentBriefHTML(report, options = {}) {
     </div>
 
     <div class="section">
-      <h2 class="section-title">Signals to bring into the consult</h2>
-      <p class="section-subtitle">These are the strongest sleep/recovery leads from the recent Apple Health window.</p>
+      <h2 class="section-title">${mode === "sleep" ? "Signals to bring into the sleep/recovery consult" : "Signals to bring into the consult"}</h2>
+      <p class="section-subtitle">${mode === "sleep" ? "These are the strongest sleep/recovery leads in the recent Apple Health window." : "These are the strongest cross-domain leads in the recent Apple Health window."}</p>
       <div class="signal-list">
         ${signals.map(renderSignalCard).join("\n")}
       </div>
     </div>
 
     <div class="section">
-      <h2 class="section-title">Sleep and recovery evidence</h2>
-      <p class="section-subtitle">Use this table to ground the conversation in concrete recent data instead of a generic wellness score.</p>
+      <h2 class="section-title">${mode === "sleep" ? "Sleep and recovery evidence" : "Evidence table"}</h2>
+      <p class="section-subtitle">Ground the conversation in concrete recent data instead of a generic wellness score.</p>
       <table>
         <thead>
           <tr>
@@ -345,10 +391,10 @@ export function generateAppointmentBriefHTML(report, options = {}) {
       </table>
     </div>
 
-    ${renderStableBackgroundSection(buildStableBackgroundMetrics(report))}
+    ${renderStableBackgroundSection(stableItems)}
 
     <div class="footer-note">
-      Generated from Apple Health data via Aveil. This brief is a structured handoff for a sleep/recovery consult and is not a medical diagnosis.
+      Generated from Apple Health data via Aveil. This brief is a structured handoff for a ${mode === "sleep" ? "sleep/recovery" : "health"} consult and is not a medical diagnosis.
     </div>
   </div>
 </body>
@@ -356,8 +402,349 @@ export function generateAppointmentBriefHTML(report, options = {}) {
 
   return {
     html,
-    filename: `aveil-sleep-recovery-brief-${formatFileDate(generatedAt)}.html`,
+    filename: `${filenamePrefix}-${formatFileDate(generatedAt)}.html`,
   };
+}
+
+function buildGenericFocus(primarySignal, days) {
+  const primary = primarySignal || synthesizeFallbackSignal("generic");
+  const kind = normalizeSignalType(primary.type);
+  const positive = primary.level === "positive";
+  const acute = primary.level === "warning" || primary.level === "neutral";
+  const title = primary.title || "No acute anomaly was flagged";
+  const detail = primary.detail || "The current strongest pattern is worth validating against symptoms and routine.";
+  const move = primary.move || "Repeat the brief after one week to see whether the pattern holds.";
+
+  if (kind === "all_clear" || positive) {
+    return {
+      focusLabel: focusLabelForType(kind, { positive, scope: "generic" }),
+      headline: `No acute anomaly. The strongest current pattern is ${title.toLowerCase()}`,
+      subheadline: `This generic brief uses the strongest cross-domain signal across sleep, recovery, activity, and nutrition over the last ${days} days.`,
+      whatChanged: `Top signal: ${title}. ${detail}`,
+      whyItMatters: whyItMattersForType(kind, { positive, scope: "generic" }),
+      whatToAsk: askForType(kind, { positive, scope: "generic" }),
+      whatToTestNext: move,
+    };
+  }
+
+  return {
+    focusLabel: focusLabelForType(kind, { positive: false, scope: "generic" }),
+    headline: `The clearest current health consult issue is ${title.toLowerCase()}`,
+    subheadline: `This generic brief keeps the consult tied to the strongest flagged issue instead of defaulting to sleep every time.`,
+    whatChanged: `Top signal: ${title}. ${detail}`,
+    whyItMatters: whyItMattersForType(kind, { positive: false, scope: "generic" }),
+    whatToAsk: askForType(kind, { positive: false, scope: "generic" }),
+    whatToTestNext: move,
+  };
+}
+
+function buildSleepFocus(primarySignal, days) {
+  const primary = primarySignal || synthesizeFallbackSignal("sleep");
+  const kind = normalizeSignalType(primary.type);
+  const positive = primary.level === "positive";
+  const title = primary.title || "No acute sleep/recovery anomaly was flagged";
+  const detail = primary.detail || "The current strongest sleep/recovery pattern is worth validating against symptoms and routine.";
+  const move = primary.move || "Repeat the sleep brief after one week to compare against the current baseline.";
+
+  if (kind === "all_clear" || positive) {
+    return {
+      focusLabel: focusLabelForType(kind, { positive, scope: "sleep" }),
+      headline: `No acute anomaly. The strongest current sleep/recovery pattern is ${title.toLowerCase()}`,
+      subheadline: `This narrower brief stays focused on sleep and recovery over the last ${days} days instead of broadening into a full lifestyle review.`,
+      whatChanged: `Top signal: ${title}. ${detail}`,
+      whyItMatters: whyItMattersForType(kind, { positive, scope: "sleep" }),
+      whatToAsk: askForType(kind, { positive, scope: "sleep" }),
+      whatToTestNext: move,
+    };
+  }
+
+  return {
+    focusLabel: focusLabelForType(kind, { positive: false, scope: "sleep" }),
+    headline: `The clearest sleep/recovery anomaly right now is ${title.toLowerCase()}`,
+    subheadline: `This sleep-specific brief intentionally ignores non-sleep domains so the consult can stay on the main wedge.`,
+    whatChanged: `Top signal: ${title}. ${detail}`,
+    whyItMatters: whyItMattersForType(kind, { positive: false, scope: "sleep" }),
+    whatToAsk: askForType(kind, { positive: false, scope: "sleep" }),
+    whatToTestNext: move,
+  };
+}
+
+function buildDisplaySignals(report, { scope }) {
+  const candidates = sortSignals(selectSignals(report?.signals, { scope }));
+  if (!candidates.length) {
+    return [toDisplaySignal(synthesizeFallbackSignal(scope))];
+  }
+  return candidates.slice(0, 3).map(toDisplaySignal);
+}
+
+function pickPrimarySignal(signals, { scope }) {
+  const candidates = sortSignals(selectSignals(signals, { scope }));
+  return candidates[0] || null;
+}
+
+function selectSignals(signals, { scope }) {
+  const items = Array.isArray(signals) ? signals.filter(Boolean) : [];
+  if (scope === "sleep") {
+    return items.filter((signal) => isSleepRecoveryDomain(signalDomain(signal.type)) || signalDomain(signal.type) === "all_clear");
+  }
+  return items;
+}
+
+function sortSignals(signals) {
+  const rank = { warning: 3, neutral: 2, positive: 1 };
+  return [...signals].sort((a, b) => {
+    const levelDelta = (rank[b.level] || 0) - (rank[a.level] || 0);
+    if (levelDelta !== 0) return levelDelta;
+    if (signalDomain(a.type) === "all_clear" && signalDomain(b.type) !== "all_clear") return 1;
+    if (signalDomain(b.type) === "all_clear" && signalDomain(a.type) !== "all_clear") return -1;
+    return 0;
+  });
+}
+
+function buildMetricRows(report, primarySignal, { scope }) {
+  const domain = scope === "sleep"
+    ? "sleep"
+    : signalDomain(primarySignal?.type);
+
+  switch (domain) {
+    case "recovery":
+      return buildRecoveryMetricRows(report);
+    case "activity":
+      return buildActivityMetricRows(report);
+    case "nutrition":
+      return buildNutritionMetricRows(report);
+    case "sleep":
+    case "all_clear":
+    default:
+      return buildSleepMetricRows(report);
+  }
+}
+
+function buildSleepMetricRows(report) {
+  const rows = [];
+  const sleep = report?.sleep || {};
+  const recovery = report?.recovery || {};
+  const lastNight = sleep.lastNight || {};
+  const averages = sleep.averages || {};
+
+  if (sleep.available) {
+    rows.push({
+      metric: "Sleep duration",
+      latest: lastNight.totalMinutes != null ? formatDuration(lastNight.totalMinutes) : "—",
+      baseline: averages.durationMinutes != null ? formatDuration(averages.durationMinutes) : "—",
+      context: withTrend("Sleep trend", sleep.trend),
+    });
+    rows.push({
+      metric: "Deep sleep",
+      latest: lastNight.deepMinutes != null ? formatDuration(lastNight.deepMinutes) : "—",
+      baseline: averages.deepMinutes != null ? formatDuration(averages.deepMinutes) : "—",
+      context: "Use this to see whether sleep quality is matching total time in bed.",
+    });
+    rows.push({
+      metric: "REM sleep",
+      latest: lastNight.remMinutes != null ? formatDuration(lastNight.remMinutes) : "—",
+      baseline: averages.remMinutes != null ? formatDuration(averages.remMinutes) : "—",
+      context: "Helpful context when recovery feels off despite decent duration.",
+    });
+    rows.push({
+      metric: "Sleep start",
+      latest: lastNight.sleepStart ? formatClock(lastNight.sleepStart) : "—",
+      baseline: averages.bedtimeHour != null ? formatHour(averages.bedtimeHour) : "—",
+      context: averages.bedtimeVariability != null
+        ? `Recent variability is about ±${averages.bedtimeVariability.toFixed(1)} hours.`
+        : "Bedtime consistency is a major sleep/recovery lever.",
+    });
+  }
+
+  if (recovery.available) {
+    rows.push({
+      metric: "HRV",
+      latest: recovery.latestHRV != null ? `${Math.round(recovery.latestHRV)} ms` : "—",
+      baseline: recovery.averageHRV != null ? `${Math.round(recovery.averageHRV)} ms avg` : "—",
+      context: withTrend("Recovery trend", recovery.trend),
+    });
+  }
+
+  return rows;
+}
+
+function buildRecoveryMetricRows(report) {
+  const rows = [];
+  const recovery = report?.recovery || {};
+  const sleep = report?.sleep || {};
+  const lastNight = sleep.lastNight || {};
+  const averages = sleep.averages || {};
+
+  if (recovery.available) {
+    rows.push({
+      metric: "HRV",
+      latest: recovery.latestHRV != null ? `${Math.round(recovery.latestHRV)} ms` : "—",
+      baseline: recovery.averageHRV != null ? `${Math.round(recovery.averageHRV)} ms avg` : "—",
+      context: withTrend("Recovery trend", recovery.trend),
+    });
+    rows.push({
+      metric: "Recovery score",
+      latest: recovery.recoveryScore != null ? `${Math.round(recovery.recoveryScore)}/100` : "—",
+      baseline: recovery.readiness ? titleCase(recovery.readiness) : "—",
+      context: "Treat this as a summary of the driver metrics, not as the sole conclusion.",
+    });
+    rows.push({
+      metric: "Resting HR",
+      latest: "—",
+      baseline: recovery.averageRHR != null ? `${Math.round(recovery.averageRHR)} bpm avg` : "—",
+      context: "Use alongside HRV and sleep, not in isolation.",
+    });
+  }
+
+  if (sleep.available) {
+    rows.push({
+      metric: "Sleep duration",
+      latest: lastNight.totalMinutes != null ? formatDuration(lastNight.totalMinutes) : "—",
+      baseline: averages.durationMinutes != null ? formatDuration(averages.durationMinutes) : "—",
+      context: "Sleep is the first upstream driver to check when recovery looks soft.",
+    });
+    rows.push({
+      metric: "Deep sleep",
+      latest: lastNight.deepMinutes != null ? formatDuration(lastNight.deepMinutes) : "—",
+      baseline: averages.deepMinutes != null ? formatDuration(averages.deepMinutes) : "—",
+      context: "Helps distinguish short sleep from lower-quality sleep.",
+    });
+  }
+
+  return rows;
+}
+
+function buildActivityMetricRows(report) {
+  const rows = [];
+  const activity = report?.activity || {};
+  const sleep = report?.sleep || {};
+  const recovery = report?.recovery || {};
+  const workouts = Array.isArray(activity.recentWorkouts) ? activity.recentWorkouts : [];
+
+  if (activity.available) {
+    rows.push({
+      metric: "Daily steps",
+      latest: activity.lastDay?.steps != null ? `${Math.round(activity.lastDay.steps).toLocaleString()}` : "—",
+      baseline: activity.averages?.stepsPerDay != null ? `${Math.round(activity.averages.stepsPerDay).toLocaleString()}/day` : "—",
+      context: "The movement floor matters even when a few workouts are still present.",
+    });
+    rows.push({
+      metric: "Active energy",
+      latest: activity.lastDay?.activeEnergy != null ? `${Math.round(activity.lastDay.activeEnergy)} kcal` : "—",
+      baseline: activity.averages?.activeEnergyPerDay != null ? `${Math.round(activity.averages.activeEnergyPerDay)} kcal/day` : "—",
+      context: "Useful for spotting low-output weeks that structured training alone can hide.",
+    });
+    rows.push({
+      metric: "Exercise",
+      latest: workouts.length ? `${workouts[0].type} • ${Math.round(workouts[0].duration)} min` : "—",
+      baseline: workouts.length ? `${workouts.length} recent workouts` : "—",
+      context: "Recent workouts add context, but the daily movement floor usually explains the signal better.",
+    });
+  }
+
+  if (sleep.available) {
+    rows.push({
+      metric: "Sleep duration",
+      latest: sleep.lastNight?.totalMinutes != null ? formatDuration(sleep.lastNight.totalMinutes) : "—",
+      baseline: sleep.averages?.durationMinutes != null ? formatDuration(sleep.averages.durationMinutes) : "—",
+      context: "Sleep gives context on whether low activity is an isolated behavior issue or part of a broader low-energy week.",
+    });
+  }
+
+  if (recovery.available) {
+    rows.push({
+      metric: "Recovery score",
+      latest: recovery.recoveryScore != null ? `${Math.round(recovery.recoveryScore)}/100` : "—",
+      baseline: recovery.readiness ? titleCase(recovery.readiness) : "—",
+      context: "Use to judge whether lower activity might be explained by recovery softness or simply a lighter routine.",
+    });
+  }
+
+  return rows;
+}
+
+function buildNutritionMetricRows(report) {
+  const rows = [];
+  const nutrition = report?.nutrition || {};
+  const activity = report?.activity || {};
+  const sleep = report?.sleep || {};
+
+  if (nutrition.available) {
+    rows.push({
+      metric: "Protein",
+      latest: nutrition.lastDay?.protein != null ? `${Math.round(nutrition.lastDay.protein)} g` : "—",
+      baseline: nutrition.averages?.proteinPerDay != null ? `${Math.round(nutrition.averages.proteinPerDay)} g/day` : "—",
+      context: "Protein tends to be the clearest nutrition recovery bottleneck in this brief.",
+    });
+    rows.push({
+      metric: "Calories",
+      latest: nutrition.lastDay?.calories != null ? `${Math.round(nutrition.lastDay.calories)} kcal` : "—",
+      baseline: nutrition.averages?.caloriesPerDay != null ? `${Math.round(nutrition.averages.caloriesPerDay)} kcal/day` : "—",
+      context: "Helpful context so a protein lag is not mistaken for a high-calorie week with poor composition.",
+    });
+  }
+
+  if (activity.available) {
+    rows.push({
+      metric: "Daily steps",
+      latest: activity.lastDay?.steps != null ? `${Math.round(activity.lastDay.steps).toLocaleString()}` : "—",
+      baseline: activity.averages?.stepsPerDay != null ? `${Math.round(activity.averages.stepsPerDay).toLocaleString()}/day` : "—",
+      context: "Movement helps explain whether intake is low relative to a heavier or lighter activity base.",
+    });
+  }
+
+  if (sleep.available) {
+    rows.push({
+      metric: "Sleep duration",
+      latest: sleep.lastNight?.totalMinutes != null ? formatDuration(sleep.lastNight.totalMinutes) : "—",
+      baseline: sleep.averages?.durationMinutes != null ? formatDuration(sleep.averages.durationMinutes) : "—",
+      context: "Sleep adds recovery context so nutrition changes are not interpreted in isolation.",
+    });
+  }
+
+  return rows;
+}
+
+function buildStableBackgroundMetrics(report, { primarySignal }) {
+  const items = [];
+  const activity = report?.activity || {};
+  const nutrition = report?.nutrition || {};
+  const primaryDomain = signalDomain(primarySignal?.type);
+  const nonPositiveDomains = new Set(
+    (Array.isArray(report?.signals) ? report.signals : [])
+      .filter((signal) => signal?.level !== "positive")
+      .map((signal) => signalDomain(signal?.type))
+  );
+
+  if (primaryDomain !== "activity" && !nonPositiveDomains.has("activity") && activity.available) {
+    const steps = activity.averages?.stepsPerDay;
+    const energy = activity.averages?.activeEnergyPerDay;
+    const workouts = Array.isArray(activity.recentWorkouts) ? activity.recentWorkouts : [];
+
+    if (Number.isFinite(steps) && steps >= 6000) {
+      items.push({ label: "daily steps", value: `${Math.round(steps).toLocaleString()}/day` });
+    }
+    if (Number.isFinite(energy) && energy >= 300) {
+      items.push({ label: "active energy", value: `${Math.round(energy)} kcal/day` });
+    }
+    if (workouts.length >= 3) {
+      items.push({ label: "exercise", value: `${workouts.length} recent workouts logged` });
+    }
+  }
+
+  if (primaryDomain !== "nutrition" && !nonPositiveDomains.has("nutrition") && nutrition.available) {
+    const calories = nutrition.averages?.caloriesPerDay;
+    const protein = nutrition.averages?.proteinPerDay;
+
+    if (Number.isFinite(calories) && calories >= 1400) {
+      items.push({ label: "calories", value: `${Math.round(calories).toLocaleString()} kcal/day` });
+    }
+    if (Number.isFinite(protein) && protein >= 90) {
+      items.push({ label: "protein", value: `${Math.round(protein)} g/day` });
+    }
+  }
+
+  return items.slice(0, 5);
 }
 
 function renderFocusCard(title, body) {
@@ -395,211 +782,67 @@ function renderStableBackgroundSection(items) {
 
   return `<div class="secondary-section">
     <h2>Other signals look stable</h2>
-    <p>This stays secondary on purpose. These background metrics help show the rest of the picture looks fine, so the consult can stay focused on the main sleep/recovery story.</p>
+    <p>This stays secondary on purpose. These background metrics help show the rest of the picture looks fine, so the consult can stay focused on the main signal.</p>
     <div class="secondary-grid">
       ${items.map((item) => `<div class="secondary-chip"><span class="secondary-label">${escapeHtml(item.label)}</span><span class="secondary-value">${escapeHtml(item.value)}</span></div>`).join("")}
     </div>
   </div>`;
 }
 
-function buildConsultFocus(report, days) {
-  const relevantSignals = buildRelevantSignals(report);
-  const primary = relevantSignals[0];
-  const normalizedType = normalizeSignalType(primary?.type);
-  const isPositive = primary?.level === "positive";
-  const isWarning = primary?.level === "warning";
-  const signalTitle = primary?.title || "No acute sleep/recovery anomaly was flagged";
-  const signalDetail = primary?.detail || "The current strongest pattern is worth validating against symptoms and routine.";
-  const signalMove = primary?.move || "Repeat the brief after one week to confirm whether the pattern holds.";
-
-  if (!primary || normalizedType === "all_clear") {
-    return {
-      focusLabel: "baseline review",
-      headline: "No acute anomaly, so use the consult to validate the strongest current pattern",
-      subheadline: `This brief narrows the conversation to sleep and recovery over the last ${days} days instead of forcing a generic wellness narrative.`,
-      whatChanged: `Strongest pattern: ${signalTitle}. ${signalDetail}`,
-      whyItMatters: "Trust drops when the narrative invents a problem that the data does not show. This framing stays anchored to what the report actually flagged.",
-      whatToAsk: "Ask whether the strongest current pattern matches real symptoms, recovery, and day-to-day functioning, or whether something important is still missing from the data.",
-      whatToTestNext: signalMove,
-    };
-  }
-
-  if (isPositive) {
-    return {
-      focusLabel: focusLabelForType(normalizedType, true),
-      headline: `No acute anomaly. The strongest current pattern is ${signalTitle.toLowerCase()}`,
-      subheadline: `The goal of this consult is to explain what appears to be working and pressure-test whether that baseline is real.`,
-      whatChanged: `Top signal: ${signalTitle}. ${signalDetail}`,
-      whyItMatters: whyItMattersForSignal(normalizedType, true),
-      whatToAsk: askForSignal(normalizedType, true),
-      whatToTestNext: signalMove,
-    };
-  }
-
-  if (isWarning) {
-    return {
-      focusLabel: focusLabelForType(normalizedType, false),
-      headline: `The clearest sleep/recovery anomaly right now is ${signalTitle.toLowerCase()}`,
-      subheadline: `This brief leads the consult with the strongest flagged issue from the recent data instead of a generic score summary.`,
-      whatChanged: `Top signal: ${signalTitle}. ${signalDetail}`,
-      whyItMatters: whyItMattersForSignal(normalizedType, false),
-      whatToAsk: askForSignal(normalizedType, false),
-      whatToTestNext: signalMove,
-    };
-  }
-
-  return {
-    focusLabel: focusLabelForType(normalizedType, false),
-    headline: `The strongest current pattern is ${signalTitle.toLowerCase()}`,
-    subheadline: `This consult brief stays tied to the top signal from the actual report instead of trying to force a stronger claim than the data supports.`,
-    whatChanged: `Top signal: ${signalTitle}. ${signalDetail}`,
-    whyItMatters: whyItMattersForSignal(normalizedType, false),
-    whatToAsk: askForSignal(normalizedType, false),
-    whatToTestNext: signalMove,
-  };
-}
-
-function buildRelevantSignals(report) {
-  const signals = Array.isArray(report.signals) ? report.signals : [];
-  const preferred = signals
-    .filter((signal) => isSleepRecoverySignal(signal?.type))
-    .map(toDisplaySignal);
-
-  if (preferred.length) return preferred;
-
-  if (signals.length) {
-    return signals.slice(0, 3).map(toDisplaySignal);
-  }
-
-  return [
-    {
-      title: "No explicit sleep/recovery signal was generated",
-      detail: "Use the evidence table below to lead the consult with the most relevant metric change instead of a generic score.",
-      move: "Pick one sleep or recovery metric to follow for the next seven days.",
-      level: "neutral",
-      levelLabel: "baseline",
-      type: "all_clear",
-    },
-  ];
-}
-
 function toDisplaySignal(signal) {
   return {
     title: signal?.title || "Untitled signal",
     detail: signal?.detail || "No detail provided.",
-    move: signal?.moves?.[0] || "",
+    move: signal?.moves?.[0] || signal?.move || "",
     level: signal?.level || "neutral",
     levelLabel: humanizeLevel(signal?.level || "neutral"),
-    type: signal?.type || "",
+    type: signal?.type || "all_clear",
   };
 }
 
-function buildMetricRows(report) {
-  const rows = [];
-  const sleep = report.sleep || {};
-  const recovery = report.recovery || {};
-  const lastNight = sleep.lastNight || {};
-  const averages = sleep.averages || {};
-
-  if (sleep.available) {
-    rows.push({
-      metric: "Sleep duration",
-      latest: lastNight.totalMinutes != null ? formatDuration(lastNight.totalMinutes) : "—",
-      baseline: averages.durationMinutes != null ? formatDuration(averages.durationMinutes) : "—",
-      context: withTrend("Sleep trend", sleep.trend),
-    });
-
-    rows.push({
-      metric: "Deep sleep",
-      latest: lastNight.deepMinutes != null ? formatDuration(lastNight.deepMinutes) : "—",
-      baseline: averages.deepMinutes != null ? formatDuration(averages.deepMinutes) : "—",
-      context: "Lower deep sleep can weaken recovery even when total sleep looks acceptable.",
-    });
-
-    rows.push({
-      metric: "REM sleep",
-      latest: lastNight.remMinutes != null ? formatDuration(lastNight.remMinutes) : "—",
-      baseline: averages.remMinutes != null ? formatDuration(averages.remMinutes) : "—",
-      context: "REM gives context on sleep quality and continuity, not just time in bed.",
-    });
-
-    rows.push({
-      metric: "Sleep start",
-      latest: lastNight.sleepStart ? formatClock(lastNight.sleepStart) : "—",
-      baseline: averages.bedtimeHour != null ? formatHour(averages.bedtimeHour) : "—",
-      context: averages.bedtimeVariability != null
-        ? `Recent variability is about ±${averages.bedtimeVariability.toFixed(1)} hours.`
-        : "Bedtime consistency is a key lever for this consult.",
-    });
+function synthesizeFallbackSignal(scope) {
+  if (scope === "sleep") {
+    return {
+      type: "all_clear",
+      level: "positive",
+      title: "No acute sleep/recovery anomaly was flagged",
+      detail: "Use the evidence table to validate the strongest current sleep/recovery pattern rather than forcing a stronger claim than the data supports.",
+      moves: ["Pick one sleep or recovery metric to re-check next week."],
+    };
   }
 
-  if (recovery.available) {
-    rows.push({
-      metric: "HRV",
-      latest: recovery.latestHRV != null ? `${Math.round(recovery.latestHRV)} ms` : "—",
-      baseline: recovery.averageHRV != null ? `${Math.round(recovery.averageHRV)} ms avg` : "—",
-      context: withTrend("Recovery trend", recovery.trend),
-    });
-
-    rows.push({
-      metric: "Resting HR",
-      latest: "—",
-      baseline: recovery.averageRHR != null ? `${Math.round(recovery.averageRHR)} bpm avg` : "—",
-      context: "Use alongside HRV and sleep duration, not in isolation.",
-    });
-
-    rows.push({
-      metric: "Recovery score",
-      latest: recovery.recoveryScore != null ? `${Math.round(recovery.recoveryScore)}/100` : "—",
-      baseline: report.overall?.components?.find((part) => part.name === "recovery")?.score != null
-        ? `${Math.round(report.overall.components.find((part) => part.name === "recovery").score)}/100 component`
-        : "—",
-      context: "Useful as a summary only after you inspect the sleep and HRV drivers above.",
-    });
-  }
-
-  return rows;
+  return {
+    type: "all_clear",
+    level: "positive",
+    title: "No acute health anomaly was flagged",
+    detail: "Use the strongest current pattern and the evidence table to decide what deserves follow-up.",
+    moves: ["Repeat the brief after one week or after a routine change."],
+  };
 }
 
-function buildStableBackgroundMetrics(report) {
-  const items = [];
-  const activity = report.activity || {};
-  const nutrition = report.nutrition || {};
-  const warningTypes = new Set(
-    (Array.isArray(report.signals) ? report.signals : [])
-      .filter((signal) => signal?.level === 'warning')
-      .map((signal) => signal?.type)
-  );
-
-  if (activity.available && !warningTypes.has('activity_low')) {
-    const steps = activity.averages?.stepsPerDay;
-    const energy = activity.averages?.activeEnergyPerDay;
-    const workouts = Array.isArray(activity.recentWorkouts) ? activity.recentWorkouts : [];
-
-    if (Number.isFinite(steps) && steps >= 6000) {
-      items.push({ label: 'daily steps', value: `${Math.round(steps).toLocaleString()}/day` });
-    }
-    if (Number.isFinite(energy) && energy >= 300) {
-      items.push({ label: 'active energy', value: `${Math.round(energy)} kcal/day` });
-    }
-    if (workouts.length >= 3) {
-      items.push({ label: 'exercise', value: `${workouts.length} recent workouts logged` });
-    }
+function signalDomain(type) {
+  switch (type) {
+    case "sleep_quality":
+    case "deep_sleep_deficit":
+    case "sleep_debt":
+    case "sleep_consistency":
+      return "sleep";
+    case "recovery_low":
+    case "recovery_readiness":
+      return "recovery";
+    case "activity_low":
+      return "activity";
+    case "protein_lag":
+      return "nutrition";
+    case "all_clear":
+      return "all_clear";
+    default:
+      return "other";
   }
+}
 
-  if (nutrition.available && !warningTypes.has('protein_low') && !warningTypes.has('calorie_low')) {
-    const calories = nutrition.averages?.caloriesPerDay;
-    const protein = nutrition.averages?.proteinPerDay;
-
-    if (Number.isFinite(calories) && calories >= 1400) {
-      items.push({ label: 'calories', value: `${Math.round(calories).toLocaleString()} kcal/day` });
-    }
-    if (Number.isFinite(protein) && protein >= 90) {
-      items.push({ label: 'protein', value: `${Math.round(protein)} g/day` });
-    }
-  }
-
-  return items.slice(0, 5);
+function isSleepRecoveryDomain(domain) {
+  return domain === "sleep" || domain === "recovery";
 }
 
 function normalizeSignalType(type) {
@@ -611,25 +854,125 @@ function normalizeSignalType(type) {
       return "recovery_low";
     case "sleep_quality":
       return "sleep_quality";
+    case "activity_low":
+      return "activity_low";
+    case "protein_lag":
+      return "protein_lag";
     case "all_clear":
       return "all_clear";
     case "deep_sleep_deficit":
+      return "deep_sleep_deficit";
     case "sleep_debt":
     default:
       return "sleep_debt";
   }
 }
 
-function isSleepRecoverySignal(type) {
-  return [
-    "sleep_debt",
-    "sleep_consistency",
-    "recovery_low",
-    "deep_sleep_deficit",
-    "sleep_quality",
-    "recovery_readiness",
-    "all_clear",
-  ].includes(type);
+function focusLabelForType(type, { positive, scope }) {
+  switch (type) {
+    case "sleep_consistency":
+      return positive ? "stable schedule" : "bedtime drift";
+    case "recovery_low":
+      return positive ? "recovery support" : "recovery dip";
+    case "sleep_quality":
+      return positive ? "strong sleep quality" : "sleep quality drop";
+    case "activity_low":
+      return positive ? "stable activity base" : "activity baseline";
+    case "protein_lag":
+      return positive ? "stable nutrition base" : "protein gap";
+    case "deep_sleep_deficit":
+      return positive ? "deep sleep support" : "deep sleep deficit";
+    case "all_clear":
+      return scope === "sleep" ? "sleep baseline" : "baseline review";
+    case "sleep_debt":
+    default:
+      return positive ? "sleep baseline" : "sleep debt";
+  }
+}
+
+function whyItMattersForType(type, { positive, scope }) {
+  switch (type) {
+    case "sleep_consistency":
+      return positive
+        ? "Stable sleep timing is often the hidden input holding recovery together, so it is worth identifying what is preserving it."
+        : "Sleep timing drift can make total sleep and recovery noisy even when a few nights still look decent on paper.";
+    case "recovery_low":
+      return positive
+        ? "Supportive recovery suggests the current sleep/recovery setup may actually be working, which is useful to preserve before changing variables."
+        : "Soft recovery can reduce training tolerance and make fatigue feel worse even when sleep duration looks acceptable.";
+    case "sleep_quality":
+      return positive
+        ? "Good sleep quality is a real asset, but only if it matches symptoms and daytime functioning."
+        : "Sleep quality can degrade before total sleep fully collapses, so it often explains why recovery feels off despite acceptable hours.";
+    case "deep_sleep_deficit":
+      return positive
+        ? "A stable deep-sleep pattern is worth protecting because it often tracks real recovery quality."
+        : "Deep sleep deficits can weaken recovery and morning readiness even when total sleep looks fine.";
+    case "activity_low":
+      return positive
+        ? "A stable movement floor keeps the rest of the health picture easier to interpret."
+        : "Low activity can drag energy, conditioning, and recovery even when a few workouts still show up in the log.";
+    case "protein_lag":
+      return positive
+        ? "A stable nutrition base makes recovery signals easier to trust."
+        : "Protein or calorie gaps can blunt recovery and make otherwise decent training or sleep data less useful.";
+    case "all_clear":
+      return scope === "sleep"
+        ? "The absence of a sharp sleep/recovery anomaly is still informative, but only if the brief stays honest about that instead of manufacturing urgency."
+        : "The absence of a sharp anomaly is still informative, but only if the brief stays honest about that instead of manufacturing urgency.";
+    case "sleep_debt":
+    default:
+      return positive
+        ? "A stable sleep baseline gives you something concrete to preserve and compare against if symptoms change later."
+        : "Short sleep is the most likely driver to test first when energy, recovery, or wake-up quality feels off.";
+  }
+}
+
+function askForType(type, { positive }) {
+  switch (type) {
+    case "sleep_consistency":
+      return positive
+        ? "Ask which part of the routine is most responsible for the stable schedule, and what would be the earliest sign that it is slipping."
+        : "Ask whether the main issue is circadian drift, inconsistent time in bed, or fragmentation after sleep onset.";
+    case "recovery_low":
+      return positive
+        ? "Ask whether the recovery strength matches subjective energy and training response, or if the data is missing a meaningful stressor."
+        : "Ask whether the recovery dip looks more like under-recovery, illness/stress load, or sleep quality deterioration.";
+    case "sleep_quality":
+      return positive
+        ? "Ask which part of the current routine is most worth preserving because it seems to support sleep quality."
+        : "Ask whether the quality problem is more about awakenings, breathing, bedtime timing, or sleep opportunity.";
+    case "deep_sleep_deficit":
+      return positive
+        ? "Ask what seems to support deep sleep so you can preserve it under stress or travel."
+        : "Ask whether the deep-sleep drop is being driven by schedule drift, late meals, alcohol, stress, or sleep fragmentation.";
+    case "activity_low":
+      return positive
+        ? "Ask which habit is most responsible for keeping the movement floor up."
+        : "Ask whether the main issue is total movement floor, structured exercise frequency, or inactivity between workouts.";
+    case "protein_lag":
+      return positive
+        ? "Ask which meal pattern is most responsible for keeping intake stable."
+        : "Ask whether intake is too low overall, protein timing is off, or the current food pattern is too inconsistent to support recovery.";
+    case "all_clear":
+      return "Ask which single metric would be most useful to monitor next so the next brief can detect change earlier.";
+    case "sleep_debt":
+    default:
+      return positive
+        ? "Ask whether the stable baseline is enough for current goals, or whether symptoms suggest a hidden problem despite acceptable averages."
+        : "Ask whether the short-sleep pattern comes from insufficient time in bed, fragmented sleep, or a downstream issue suppressing quality.";
+  }
+}
+
+function humanizeLevel(level) {
+  switch (level) {
+    case "warning":
+      return "needs attention";
+    case "positive":
+      return "supportive";
+    default:
+      return "context";
+  }
 }
 
 function withTrend(label, trend) {
@@ -647,81 +990,6 @@ function describeTrend(trend) {
       return "stable";
     default:
       return "";
-  }
-}
-
-function humanizeLevel(level) {
-  switch (level) {
-    case "warning":
-      return "needs attention";
-    case "positive":
-      return "supportive";
-    default:
-      return "context";
-  }
-}
-
-function focusLabelForType(type, positive) {
-  switch (type) {
-    case "sleep_consistency":
-      return positive ? "stable schedule" : "bedtime drift";
-    case "recovery_low":
-      return positive ? "recovery support" : "recovery dip";
-    case "sleep_quality":
-      return positive ? "strong sleep quality" : "sleep quality drop";
-    case "all_clear":
-      return "baseline review";
-    case "sleep_debt":
-    default:
-      return positive ? "sleep baseline" : "sleep debt";
-  }
-}
-
-function whyItMattersForSignal(type, positive) {
-  switch (type) {
-    case "sleep_consistency":
-      return positive
-        ? "Stable sleep timing is often the hidden input holding recovery together, so it is worth identifying what is preserving it."
-        : "Sleep timing drift can make total sleep and recovery noisy even when a few nights still look decent on paper.";
-    case "recovery_low":
-      return positive
-        ? "Supportive recovery means the current sleep/recovery setup may actually be working, which is useful to preserve before changing variables."
-        : "Soft recovery can reduce training tolerance and make symptoms feel worse even before average sleep duration collapses.";
-    case "sleep_quality":
-      return positive
-        ? "Good sleep quality with solid stage balance is a real asset, but only if it matches symptoms and daytime functioning."
-        : "Poor sleep quality can hide inside acceptable total sleep numbers and still drag recovery down.";
-    case "all_clear":
-      return "The absence of a sharp anomaly is still informative, but only if the brief stays honest about that instead of manufacturing urgency.";
-    case "sleep_debt":
-    default:
-      return positive
-        ? "A stable sleep baseline matters because it gives you something concrete to preserve and compare against if symptoms change later."
-        : "Short sleep is the most likely driver to test first when energy, recovery, or wake-up quality feels off.";
-  }
-}
-
-function askForSignal(type, positive) {
-  switch (type) {
-    case "sleep_consistency":
-      return positive
-        ? "Ask which part of the routine is most responsible for the stable schedule, and what would be the earliest sign that it is slipping."
-        : "Ask whether the main issue is circadian drift, inconsistent time in bed, or fragmentation after sleep onset.";
-    case "recovery_low":
-      return positive
-        ? "Ask whether the recovery strength matches how training and mornings actually feel, or if the data is missing a meaningful stressor."
-        : "Ask whether the recovery dip looks more like under-recovery, illness/stress load, or sleep quality deterioration.";
-    case "sleep_quality":
-      return positive
-        ? "Ask which variable is most worth preserving because it seems to support the strong sleep pattern, rather than changing several things at once."
-        : "Ask whether the quality problem is more about awakenings, breathing, bedtime timing, or sleep opportunity.";
-    case "all_clear":
-      return "Ask which single metric would be most useful to monitor next so the next brief can detect change earlier.";
-    case "sleep_debt":
-    default:
-      return positive
-        ? "Ask whether the stable baseline is enough for current goals, or whether symptoms suggest a hidden problem despite acceptable averages."
-        : "Ask whether the short-sleep pattern comes from insufficient time in bed, fragmented sleep, or a downstream issue suppressing quality.";
   }
 }
 
@@ -758,6 +1026,14 @@ function formatHour(decimalHour) {
 
 function formatFileDate(date) {
   return date.toISOString().slice(0, 10);
+}
+
+function titleCase(value) {
+  return String(value || "")
+    .split(/[_\s-]+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
 }
 
 function escapeHtml(value) {
