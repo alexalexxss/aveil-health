@@ -216,6 +216,46 @@ export function generateAppointmentBriefHTML(report, options = {}) {
     background:#faf7f1;
   }
   tr:last-child td{border-bottom:none}
+  .secondary-section{
+    margin-top:22px;
+    padding:16px 18px;
+    border:1px solid var(--border);
+    border-radius:16px;
+    background:#fbf8f2;
+  }
+  .secondary-section h2{
+    margin:0 0 6px;
+    font-size:15px;
+  }
+  .secondary-section p{
+    margin:0 0 12px;
+    font-size:13px;
+    color:var(--muted);
+  }
+  .secondary-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
+    gap:10px;
+  }
+  .secondary-chip{
+    background:#fff;
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:10px 12px;
+  }
+  .secondary-label{
+    display:block;
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:.08em;
+    color:var(--muted);
+    margin-bottom:4px;
+  }
+  .secondary-value{
+    display:block;
+    font-size:14px;
+    font-weight:600;
+  }
   .footer-note{
     margin-top:24px;
     padding-top:16px;
@@ -305,6 +345,8 @@ export function generateAppointmentBriefHTML(report, options = {}) {
       </table>
     </div>
 
+    ${renderStableBackgroundSection(buildStableBackgroundMetrics(report))}
+
     <div class="footer-note">
       Generated from Apple Health data via Aveil. This brief is a structured handoff for a sleep/recovery consult and is not a medical diagnosis.
     </div>
@@ -346,6 +388,18 @@ function renderMetricRow(row) {
     <td data-label="Baseline">${escapeHtml(row.baseline)}</td>
     <td data-label="Context">${escapeHtml(row.context)}</td>
   </tr>`;
+}
+
+function renderStableBackgroundSection(items) {
+  if (!items.length) return "";
+
+  return `<div class="secondary-section">
+    <h2>Other signals look stable</h2>
+    <p>This stays secondary on purpose. These background metrics help show the rest of the picture looks fine, so the consult can stay focused on the main sleep/recovery story.</p>
+    <div class="secondary-grid">
+      ${items.map((item) => `<div class="secondary-chip"><span class="secondary-label">${escapeHtml(item.label)}</span><span class="secondary-value">${escapeHtml(item.value)}</span></div>`).join("")}
+    </div>
+  </div>`;
 }
 
 function buildConsultFocus(report, days) {
@@ -505,6 +559,47 @@ function buildMetricRows(report) {
   }
 
   return rows;
+}
+
+function buildStableBackgroundMetrics(report) {
+  const items = [];
+  const activity = report.activity || {};
+  const nutrition = report.nutrition || {};
+  const warningTypes = new Set(
+    (Array.isArray(report.signals) ? report.signals : [])
+      .filter((signal) => signal?.level === 'warning')
+      .map((signal) => signal?.type)
+  );
+
+  if (activity.available && !warningTypes.has('activity_low')) {
+    const steps = activity.averages?.stepsPerDay;
+    const energy = activity.averages?.activeEnergyPerDay;
+    const workouts = Array.isArray(activity.recentWorkouts) ? activity.recentWorkouts : [];
+
+    if (Number.isFinite(steps) && steps >= 6000) {
+      items.push({ label: 'daily steps', value: `${Math.round(steps).toLocaleString()}/day` });
+    }
+    if (Number.isFinite(energy) && energy >= 300) {
+      items.push({ label: 'active energy', value: `${Math.round(energy)} kcal/day` });
+    }
+    if (workouts.length >= 3) {
+      items.push({ label: 'exercise', value: `${workouts.length} recent workouts logged` });
+    }
+  }
+
+  if (nutrition.available && !warningTypes.has('protein_low') && !warningTypes.has('calorie_low')) {
+    const calories = nutrition.averages?.caloriesPerDay;
+    const protein = nutrition.averages?.proteinPerDay;
+
+    if (Number.isFinite(calories) && calories >= 1400) {
+      items.push({ label: 'calories', value: `${Math.round(calories).toLocaleString()} kcal/day` });
+    }
+    if (Number.isFinite(protein) && protein >= 90) {
+      items.push({ label: 'protein', value: `${Math.round(protein)} g/day` });
+    }
+  }
+
+  return items.slice(0, 5);
 }
 
 function normalizeSignalType(type) {

@@ -104,6 +104,21 @@ test("generateAppointmentBriefHTML uses truthful fallback when the top signal is
       averageRHR: 54,
       recoveryScore: 86,
     },
+    activity: {
+      available: true,
+      averages: {
+        stepsPerDay: 12076,
+        activeEnergyPerDay: 783,
+      },
+      recentWorkouts: [{}, {}, {}],
+    },
+    nutrition: {
+      available: true,
+      averages: {
+        caloriesPerDay: 1676,
+        proteinPerDay: 132,
+      },
+    },
     signals: [
       {
         type: "sleep_quality",
@@ -122,5 +137,8 @@ test("generateAppointmentBriefHTML uses truthful fallback when the top signal is
 
   assert.match(html, /No acute anomaly\./);
   assert.match(html, /Top signal: Sleep: 7\.2h \(good\)\./);
+  assert.match(html, /Other signals look stable/);
+  assert.match(html, /daily steps/);
+  assert.match(html, /protein/);
   assert.doesNotMatch(html, /The clearest sleep\/recovery anomaly/i);
 });
