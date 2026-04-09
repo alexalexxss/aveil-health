@@ -1,22 +1,8 @@
 # aveil-health
 
-Your Apple Health data, analyzed locally via CLI.
+Turn your Apple Health export into an appointment-ready consult brief, locally.
 
-One command to turn your data into a clear report — sleep stages, recovery readiness, activity trends, and nutrition signals (if you track food). Everything runs on your machine. Nothing leaves it.
-
-## Health Wrapped
-
-Generate a shareable card (think Spotify Wrapped, but for your health):
-
-```bash
-npx aveil-health wrapped export.zip
-```
-
-Opens a dark-mode card in your browser with your score, health identity, stats, and signals.
-
-<p align="center">
-  <img src="assets/wrapped-demo.png" width="360" alt="Health Wrapped card example — The Optimizer" />
-</p>
+One command to turn your data into a clinician-ready summary — sleep stages, recovery readiness, activity trends, and nutrition signals (if you track food). No server, no Docker, no account. Everything runs on your machine.
 
 ## Health consult brief
 
@@ -36,7 +22,7 @@ It is intentionally not a generic wellness report. The artifact is designed to h
 
 Canonical example output in this repo:
 - `examples/output/appointment-brief.html`
-- `assets/appointment-brief-showcase.png`
+- `assets/consult-brief-social.png`
 
 For a narrower sleep-first version, use the dedicated sleep brief mode:
 
@@ -45,7 +31,23 @@ npx aveil-health sleep-brief export.zip --output ~/Desktop/sleep-recovery-brief.
 ```
 
 <p align="center">
-  <img src="assets/appointment-brief-showcase.png" width="360" alt="Aveil health consult brief showcase" />
+  <img src="assets/consult-brief-social.png" width="360" alt="Aveil social asset showing Apple Health export turning into an appointment-ready consult brief, with brief and sleep-brief commands plus local and no-account cues" />
+</p>
+
+<p align="center"><sub>Apple Health export in, <code>brief</code> or <code>sleep-brief</code> out, fully local, no account required.</sub></p>
+
+## Health Wrapped
+
+Generate a shareable card (think Spotify Wrapped, but for your health):
+
+```bash
+npx aveil-health wrapped export.zip
+```
+
+Opens a dark-mode card in your browser with your score, health identity, stats, and signals.
+
+<p align="center">
+  <img src="assets/wrapped-demo.png" width="360" alt="Health Wrapped card example — The Optimizer" />
 </p>
 
 ## Get Started
@@ -65,15 +67,6 @@ On your iPhone:
 ### 2. Run it
 
 ```bash
-# Full analysis
-npx aveil-health analyze export.zip
-
-# Just the last 2 weeks
-npx aveil-health analyze export.xml --days 14
-
-# JSON output (pipe to jq, save, feed to other tools)
-npx aveil-health analyze export.xml --json > report.json
-
 # Health consult brief
 npx aveil-health brief export.zip
 
@@ -82,6 +75,15 @@ npx aveil-health brief export.zip --output ~/Desktop/health-consult-brief.html
 
 # Narrow sleep & recovery brief
 npx aveil-health sleep-brief export.zip --output ~/Desktop/sleep-recovery-brief.html
+
+# Full analysis
+npx aveil-health analyze export.zip
+
+# Just the last 2 weeks
+npx aveil-health analyze export.xml --days 14
+
+# JSON output (pipe to jq, save, feed to other tools)
+npx aveil-health analyze export.xml --json > report.json
 
 # Wrapped card
 npx aveil-health wrapped export.zip
