@@ -94,6 +94,33 @@
     color:var(--muted);
   }
   .chip strong{color:var(--ink)}
+  .coverage-strip{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    margin:16px 0 0;
+  }
+  .coverage-chip{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    padding:8px 12px;
+    border-radius:999px;
+    font-size:12px;
+    font-weight:600;
+    border:1px solid transparent;
+    background:#fff;
+  }
+  .coverage-chip-present{
+    color:var(--good);
+    background:var(--good-soft);
+    border-color:#c8eed5;
+  }
+  .coverage-chip-missing{
+    color:var(--warn);
+    background:var(--warn-soft);
+    border-color:#f3d6b2;
+  }
   .focus-grid{
     display:grid;
     grid-template-columns:repeat(2,minmax(0,1fr));
@@ -275,13 +302,16 @@
 
     <div class="hero">
       <div>
-        <h1>The clearest current health consult issue is sleep: 5.5h (short)</h1>
+        <h1>The clearest current health consult issue is steps: 4.8k/day</h1>
         <p>This brief uses the strongest cross-domain signal across sleep, recovery, activity, and nutrition over the last 30 days.</p>
         <div class="meta-row">
           <span class="chip"><strong>Window</strong> last 30 days</span>
           <span class="chip"><strong>Generated</strong> Apr 6, 2026</span>
-          <span class="chip"><strong>Focus</strong> sleep quality drop</span>
+          <span class="chip"><strong>Focus</strong> activity baseline</span>
         </div>
+        <div class="coverage-strip" aria-label="Data coverage in this export window">
+    <span class="coverage-chip coverage-chip-present">Sleep present</span><span class="coverage-chip coverage-chip-present">Recovery present</span><span class="coverage-chip coverage-chip-present">Activity present</span><span class="coverage-chip coverage-chip-present">Nutrition present</span>
+  </div>
       </div>
       <div class="hero-card">
         <h2>Use this in a health consult</h2>
@@ -294,9 +324,9 @@
     </div>
 
     <div class="focus-grid">
-      <div class="focus-card"><h3>What changed</h3><p>Top signal: Sleep: 5.5h (short). Deep 42m · REM 58m · Core 3h 52m</p></div>
-      <div class="focus-card"><h3>Why it matters</h3><p>Sleep quality can degrade before total sleep fully collapses, so it often explains why recovery feels off despite acceptable hours.</p></div>
-      <div class="focus-card"><h3>What to ask</h3><p>Ask whether the quality problem is more about awakenings, breathing, bedtime timing, or sleep opportunity.</p></div>
+      <div class="focus-card"><h3>What changed</h3><p>Top signal: Steps: 4.8k/day. Activity base is light · 1 recent workout</p></div>
+      <div class="focus-card"><h3>Why it matters</h3><p>Low activity can drag energy, conditioning, and recovery even when a few workouts still show up in the log.</p></div>
+      <div class="focus-card"><h3>What to ask</h3><p>Ask whether the main issue is total movement floor, structured exercise frequency, or inactivity between workouts.</p></div>
       <div class="focus-card"><h3>What to test next</h3><p>Generate a new brief after one week to see whether the pattern holds.</p></div>
     </div>
 
@@ -306,27 +336,27 @@
       <div class="signal-list">
         <div class="signal-card">
     <div class="signal-top">
-      <p class="signal-title">Sleep: 5.5h (short)</p>
-      <span class="badge badge-warning">needs attention</span>
+      <p class="signal-title">Steps: 4.8k/day</p>
+      <span class="badge badge-neutral">context</span>
     </div>
-    <p class="signal-detail">Deep 42m · REM 58m · Core 3h 52m</p>
-    <ul class="moves"><li>Review late meals, bedtime drift, and nighttime wake triggers</li></ul>
+    <p class="signal-detail">Activity base is light · 1 recent workout</p>
+    <ul class="moves"><li>Add one extra walk or short session to raise the weekly floor.</li></ul>
   </div>
 <div class="signal-card">
     <div class="signal-top">
-      <p class="signal-title">Recovery: 39/100 (low)</p>
-      <span class="badge badge-warning">needs attention</span>
+      <p class="signal-title">Sleep: 7.2h (good)</p>
+      <span class="badge badge-positive">favorable</span>
     </div>
-    <p class="signal-detail">HRV 41ms (avg 78ms) · RHR 61bpm</p>
-    <ul class="moves"><li>Keep training light today and prioritize recovery inputs</li></ul>
+    <p class="signal-detail">Deep 87m · REM 111m · Core 231m</p>
+    <ul class="moves"><li>Preserve the routine before changing variables.</li></ul>
   </div>
 <div class="signal-card">
     <div class="signal-top">
-      <p class="signal-title">Sleep debt is building</p>
-      <span class="badge badge-warning">needs attention</span>
+      <p class="signal-title">Recovery: ready</p>
+      <span class="badge badge-positive">favorable</span>
     </div>
-    <p class="signal-detail">5.9h average over 14 nights · bedtime variability 1.3h</p>
-    <ul class="moves"><li>Pick one earlier bedtime target and hold it for 3 nights</li></ul>
+    <p class="signal-detail">HRV 120ms · Resting HR 54bpm</p>
+    <ul class="moves"><li>Training and recovery look compatible.</li></ul>
   </div>
       </div>
     </div>
@@ -345,34 +375,34 @@
         </thead>
         <tbody>
           <tr>
+    <td data-label="Metric">Daily steps</td>
+    <td data-label="Latest">4,100</td>
+    <td data-label="Baseline">4,820/day</td>
+    <td data-label="Context">The movement floor matters even when a few workouts are still present.</td>
+  </tr>
+<tr>
+    <td data-label="Metric">Active energy</td>
+    <td data-label="Latest">220 kcal</td>
+    <td data-label="Baseline">251 kcal/day</td>
+    <td data-label="Context">Useful for spotting low-output weeks that structured training alone can hide.</td>
+  </tr>
+<tr>
+    <td data-label="Metric">Exercise</td>
+    <td data-label="Latest">Walk • 28 min</td>
+    <td data-label="Baseline">1 recent workouts</td>
+    <td data-label="Context">Recent workouts add context, but the daily movement floor usually explains the signal better.</td>
+  </tr>
+<tr>
     <td data-label="Metric">Sleep duration</td>
-    <td data-label="Latest">5h 32m</td>
-    <td data-label="Baseline">5h 56m</td>
-    <td data-label="Context">Sleep trend: stable.</td>
+    <td data-label="Latest">7h 10m</td>
+    <td data-label="Baseline">7h 9m</td>
+    <td data-label="Context">Sleep gives context on whether low activity is an isolated behavior issue or part of a broader low-energy week.</td>
   </tr>
 <tr>
-    <td data-label="Metric">Deep sleep</td>
-    <td data-label="Latest">42m</td>
-    <td data-label="Baseline">38m</td>
-    <td data-label="Context">Use this to see whether sleep quality is matching total time in bed.</td>
-  </tr>
-<tr>
-    <td data-label="Metric">REM sleep</td>
-    <td data-label="Latest">58m</td>
-    <td data-label="Baseline">1h 6m</td>
-    <td data-label="Context">Helpful context when recovery feels off despite decent duration.</td>
-  </tr>
-<tr>
-    <td data-label="Metric">Sleep start</td>
-    <td data-label="Latest">9:12 PM</td>
-    <td data-label="Baseline">9:00 PM</td>
-    <td data-label="Context">Recent variability is about ±78.0 hours.</td>
-  </tr>
-<tr>
-    <td data-label="Metric">HRV</td>
-    <td data-label="Latest">41 ms</td>
-    <td data-label="Baseline">78 ms avg</td>
-    <td data-label="Context">Recovery trend: declining.</td>
+    <td data-label="Metric">Recovery score</td>
+    <td data-label="Latest">86/100</td>
+    <td data-label="Baseline">Good</td>
+    <td data-label="Context">Use to judge whether lower activity might be explained by recovery softness or simply a lighter routine.</td>
   </tr>
         </tbody>
       </table>
@@ -382,7 +412,7 @@
     <h2>Other signals look stable</h2>
     <p>This stays secondary on purpose. It shows the broader picture is relatively stable so the consult can stay focused on the main issue.</p>
     <div class="secondary-grid">
-      <div class="secondary-chip"><span class="secondary-label">daily steps</span><span class="secondary-value">11,240/day</span></div><div class="secondary-chip"><span class="secondary-label">active energy</span><span class="secondary-value">604 kcal/day</span></div><div class="secondary-chip"><span class="secondary-label">exercise</span><span class="secondary-value">20 recent workouts logged</span></div><div class="secondary-chip"><span class="secondary-label">calories</span><span class="secondary-value">1,676 kcal/day</span></div><div class="secondary-chip"><span class="secondary-label">protein</span><span class="secondary-value">133 g/day</span></div>
+      <div class="secondary-chip"><span class="secondary-label">calories</span><span class="secondary-value">1,680 kcal/day</span></div><div class="secondary-chip"><span class="secondary-label">protein</span><span class="secondary-value">132 g/day</span></div>
     </div>
   </div>
 

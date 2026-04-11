@@ -94,6 +94,33 @@
     color:var(--muted);
   }
   .chip strong{color:var(--ink)}
+  .coverage-strip{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    margin:16px 0 0;
+  }
+  .coverage-chip{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    padding:8px 12px;
+    border-radius:999px;
+    font-size:12px;
+    font-weight:600;
+    border:1px solid transparent;
+    background:#fff;
+  }
+  .coverage-chip-present{
+    color:var(--good);
+    background:var(--good-soft);
+    border-color:#c8eed5;
+  }
+  .coverage-chip-missing{
+    color:var(--warn);
+    background:var(--warn-soft);
+    border-color:#f3d6b2;
+  }
   .focus-grid{
     display:grid;
     grid-template-columns:repeat(2,minmax(0,1fr));
@@ -275,13 +302,16 @@
 
     <div class="hero">
       <div>
-        <h1>No acute anomaly. The strongest current sleep/recovery pattern is sleep: 7.2h (good)</h1>
-        <p>This narrower brief stays focused on sleep and recovery over the last 30 days instead of broadening into a full lifestyle review.</p>
+        <h1>The clearest sleep/recovery anomaly right now is sleep duration is below target</h1>
+        <p>This sleep-specific brief intentionally ignores non-sleep domains so the consult can stay on the main wedge.</p>
         <div class="meta-row">
           <span class="chip"><strong>Window</strong> last 30 days</span>
           <span class="chip"><strong>Generated</strong> Apr 6, 2026</span>
-          <span class="chip"><strong>Focus</strong> strong sleep quality</span>
+          <span class="chip"><strong>Focus</strong> sleep debt</span>
         </div>
+        <div class="coverage-strip" aria-label="Data coverage in this export window">
+    <span class="coverage-chip coverage-chip-present">Sleep present</span><span class="coverage-chip coverage-chip-present">Recovery present</span><span class="coverage-chip coverage-chip-present">Activity present</span><span class="coverage-chip coverage-chip-present">Nutrition present</span>
+  </div>
       </div>
       <div class="hero-card">
         <h2>Use this in a sleep/recovery consult</h2>
@@ -294,9 +324,9 @@
     </div>
 
     <div class="focus-grid">
-      <div class="focus-card"><h3>What changed</h3><p>Top signal: Sleep: 7.2h (good). Deep 1h 27m · REM 1h 51m · Core 3h 51m</p></div>
-      <div class="focus-card"><h3>Why it matters</h3><p>Good sleep quality is a real asset, but only if it matches symptoms and daytime functioning.</p></div>
-      <div class="focus-card"><h3>What to ask</h3><p>Ask which recent habits, timing changes, or conditions might best explain the stronger sleep quality, so the useful ones can be preserved.</p></div>
+      <div class="focus-card"><h3>What changed</h3><p>Top signal: Sleep duration is below target. Average sleep has slipped below the recent baseline while recovery is only moderate.</p></div>
+      <div class="focus-card"><h3>Why it matters</h3><p>Short sleep is the most likely driver to test first when energy, recovery, or wake-up quality feels off.</p></div>
+      <div class="focus-card"><h3>What to ask</h3><p>Ask whether the short-sleep pattern comes from insufficient time in bed, fragmented sleep, or a downstream issue suppressing quality.</p></div>
       <div class="focus-card"><h3>What to test next</h3><p>Generate a new sleep brief after one week to compare against the current baseline.</p></div>
     </div>
 
@@ -306,19 +336,11 @@
       <div class="signal-list">
         <div class="signal-card">
     <div class="signal-top">
-      <p class="signal-title">Sleep: 7.2h (good)</p>
-      <span class="badge badge-positive">favorable</span>
+      <p class="signal-title">Sleep duration is below target</p>
+      <span class="badge badge-warning">needs attention</span>
     </div>
-    <p class="signal-detail">Deep 1h 27m · REM 1h 51m · Core 3h 51m</p>
-    <ul class="moves"><li>Sleep looks solid — maintain current routine</li></ul>
-  </div>
-<div class="signal-card">
-    <div class="signal-top">
-      <p class="signal-title">Recovery: 74/100 (good)</p>
-      <span class="badge badge-positive">favorable</span>
-    </div>
-    <p class="signal-detail">HRV 120ms (avg 109.5ms) · RHR 51bpm</p>
-    <ul class="moves"><li>Good to push — recovery supports hard training today</li></ul>
+    <p class="signal-detail">Average sleep has slipped below the recent baseline while recovery is only moderate.</p>
+    <ul class="moves"><li>Protect sleep timing for the next 7 days.</li></ul>
   </div>
       </div>
     </div>
@@ -338,33 +360,33 @@
         <tbody>
           <tr>
     <td data-label="Metric">Sleep duration</td>
-    <td data-label="Latest">7h 9m</td>
-    <td data-label="Baseline">7h 1m</td>
-    <td data-label="Context">Sleep trend: stable.</td>
+    <td data-label="Latest">6h 2m</td>
+    <td data-label="Baseline">6h 52m</td>
+    <td data-label="Context">Sleep trend: declining.</td>
   </tr>
 <tr>
     <td data-label="Metric">Deep sleep</td>
-    <td data-label="Latest">1h 27m</td>
-    <td data-label="Baseline">52m</td>
+    <td data-label="Latest">52m</td>
+    <td data-label="Baseline">1h 7m</td>
     <td data-label="Context">Use this to see whether sleep quality is matching total time in bed.</td>
   </tr>
 <tr>
     <td data-label="Metric">REM sleep</td>
-    <td data-label="Latest">1h 51m</td>
-    <td data-label="Baseline">1h 36m</td>
+    <td data-label="Latest">1h 8m</td>
+    <td data-label="Baseline">1h 21m</td>
     <td data-label="Context">Helpful context when recovery feels off despite decent duration.</td>
   </tr>
 <tr>
     <td data-label="Metric">Sleep start</td>
-    <td data-label="Latest">9:12 PM</td>
-    <td data-label="Baseline">9:00 PM</td>
-    <td data-label="Context">Recent variability is about ±0.4 hours.</td>
+    <td data-label="Latest">5:58 PM</td>
+    <td data-label="Baseline">11:54 PM</td>
+    <td data-label="Context">Recent variability is about ±1.4 hours.</td>
   </tr>
 <tr>
     <td data-label="Metric">HRV</td>
-    <td data-label="Latest">120 ms</td>
-    <td data-label="Baseline">110 ms avg</td>
-    <td data-label="Context">Recovery trend: improving.</td>
+    <td data-label="Latest">51 ms</td>
+    <td data-label="Baseline">63 ms avg</td>
+    <td data-label="Context">Recovery trend: declining.</td>
   </tr>
         </tbody>
       </table>
@@ -374,7 +396,7 @@
     <h2>Other signals look stable</h2>
     <p>This stays secondary on purpose. It shows the broader picture is relatively stable so the consult can stay focused on the main issue.</p>
     <div class="secondary-grid">
-      <div class="secondary-chip"><span class="secondary-label">daily steps</span><span class="secondary-value">12,076/day</span></div><div class="secondary-chip"><span class="secondary-label">active energy</span><span class="secondary-value">783 kcal/day</span></div><div class="secondary-chip"><span class="secondary-label">exercise</span><span class="secondary-value">20 recent workouts logged</span></div><div class="secondary-chip"><span class="secondary-label">calories</span><span class="secondary-value">1,676 kcal/day</span></div><div class="secondary-chip"><span class="secondary-label">protein</span><span class="secondary-value">133 g/day</span></div>
+      <div class="secondary-chip"><span class="secondary-label">calories</span><span class="secondary-value">1,680 kcal/day</span></div><div class="secondary-chip"><span class="secondary-label">protein</span><span class="secondary-value">132 g/day</span></div>
     </div>
   </div>
 
