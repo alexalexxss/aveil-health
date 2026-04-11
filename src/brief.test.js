@@ -165,6 +165,64 @@ test("generic brief uses truthful no-acute-anomaly framing when the top signal i
   assert.doesNotMatch(html, /The clearest current health consult issue/i);
 });
 
+test("brief shows truthful present and missing domain coverage near the top", () => {
+  const report = {
+    overall: { score: 71 },
+    sleep: {
+      available: true,
+      trend: "stable",
+      lastNight: {
+        totalMinutes: 410,
+        deepMinutes: 78,
+        remMinutes: 96,
+        sleepStart: "2026-04-05T23:18:00.000Z",
+      },
+      averages: {
+        durationMinutes: 420,
+        deepMinutes: 75,
+        remMinutes: 94,
+        bedtimeHour: 23.4,
+        bedtimeVariability: 0.6,
+      },
+    },
+    recovery: {
+      available: true,
+      trend: "stable",
+      latestHRV: 72,
+      averageHRV: 70,
+      averageRHR: 56,
+      recoveryScore: 73,
+      readiness: "moderate",
+    },
+    activity: {
+      available: false,
+    },
+    nutrition: {
+      available: false,
+    },
+    signals: [
+      {
+        type: "sleep_debt",
+        level: "warning",
+        title: "Sleep duration is below target",
+        detail: "Average sleep has slipped below the recent baseline.",
+        moves: ["Protect sleep timing for the next 7 days."],
+      },
+    ],
+  };
+
+  const { html } = generateHealthConsultBriefHTML(report, {
+    generatedAt: "2026-04-06T12:00:00.000Z",
+    days: 30,
+  });
+
+  assert.match(html, /aria-label="Data coverage in this export window"/);
+  assert.match(html, /Sleep present/);
+  assert.match(html, /Recovery present/);
+  assert.match(html, /Activity missing/);
+  assert.match(html, /Nutrition missing/);
+});
+
 test("sleep brief preserves the narrow sleep\/recovery wedge", () => {
   const report = {
     overall: { score: 69, components: [{ name: "sleep", score: 58 }] },

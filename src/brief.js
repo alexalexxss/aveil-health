@@ -16,6 +16,7 @@ export function generateHealthConsultBriefHTML(report, options = {}) {
     generatedAt,
     days,
     focus: buildGenericFocus(primarySignal, days),
+    availabilityItems: buildAvailabilityItems(report),
     signals: displaySignals,
     metrics: buildMetricRows(report, primarySignal, { scope: "generic" }),
     stableItems: buildStableBackgroundMetrics(report, { primarySignal }),
@@ -36,6 +37,7 @@ export function generateSleepConsultBriefHTML(report, options = {}) {
     generatedAt,
     days,
     focus: buildSleepFocus(primarySignal, days),
+    availabilityItems: buildAvailabilityItems(report),
     signals: displaySignals,
     metrics: buildMetricRows(report, primarySignal, { scope: "sleep" }),
     stableItems: buildStableBackgroundMetrics(report, { primarySignal }),
@@ -53,6 +55,7 @@ function renderConsultBrief({
   generatedAt,
   days,
   focus,
+  availabilityItems,
   signals,
   metrics,
   stableItems,
@@ -159,6 +162,33 @@ function renderConsultBrief({
     color:var(--muted);
   }
   .chip strong{color:var(--ink)}
+  .coverage-strip{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    margin:16px 0 0;
+  }
+  .coverage-chip{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    padding:8px 12px;
+    border-radius:999px;
+    font-size:12px;
+    font-weight:600;
+    border:1px solid transparent;
+    background:#fff;
+  }
+  .coverage-chip-present{
+    color:var(--good);
+    background:var(--good-soft);
+    border-color:#c8eed5;
+  }
+  .coverage-chip-missing{
+    color:var(--warn);
+    background:var(--warn-soft);
+    border-color:#f3d6b2;
+  }
   .focus-grid{
     display:grid;
     grid-template-columns:repeat(2,minmax(0,1fr));
@@ -347,6 +377,7 @@ function renderConsultBrief({
           <span class="chip"><strong>Generated</strong> ${escapeHtml(dateLabel)}</span>
           <span class="chip"><strong>Focus</strong> ${escapeHtml(focus.focusLabel)}</span>
         </div>
+        ${renderAvailabilityStrip(availabilityItems)}
       </div>
       <div class="hero-card">
         <h2>${mode === "sleep" ? "Use this in a sleep/recovery consult" : "Use this in a health consult"}</h2>
@@ -466,6 +497,24 @@ function buildSleepFocus(primarySignal, days) {
     whyItMatters: whyItMattersForType(kind, { positive: false, scope: "sleep" }),
     whatToAsk: askForType(kind, { positive: false, scope: "sleep" }),
     whatToTestNext: move,
+  };
+}
+
+function buildAvailabilityItems(report) {
+  return [
+    buildAvailabilityItem("Sleep", report?.sleep?.available),
+    buildAvailabilityItem("Recovery", report?.recovery?.available),
+    buildAvailabilityItem("Activity", report?.activity?.available),
+    buildAvailabilityItem("Nutrition", report?.nutrition?.available),
+  ];
+}
+
+function buildAvailabilityItem(label, available) {
+  const present = Boolean(available);
+  return {
+    label,
+    present,
+    text: `${label} ${present ? "present" : "missing"}`,
   };
 }
 
@@ -745,6 +794,15 @@ function buildStableBackgroundMetrics(report, { primarySignal }) {
   }
 
   return items.slice(0, 5);
+}
+
+function renderAvailabilityStrip(items) {
+  const chips = Array.isArray(items) ? items.filter(Boolean) : [];
+  if (!chips.length) return "";
+
+  return `<div class="coverage-strip" aria-label="Data coverage in this export window">
+    ${chips.map((item) => `<span class="coverage-chip ${item.present ? "coverage-chip-present" : "coverage-chip-missing"}">${escapeHtml(item.text)}</span>`).join("")}
+  </div>`;
 }
 
 function renderFocusCard(title, body) {
