@@ -165,7 +165,7 @@ test("generic brief uses truthful no-acute-anomaly framing when the top signal i
   assert.doesNotMatch(html, /The clearest current health consult issue/i);
 });
 
-test("brief shows truthful present and missing domain coverage near the top", () => {
+test("brief shows truthful coverage plus grounded confidence and limits for mixed availability", () => {
   const report = {
     overall: { score: 71 },
     sleep: {
@@ -221,6 +221,10 @@ test("brief shows truthful present and missing domain coverage near the top", ()
   assert.match(html, /Recovery present/);
   assert.match(html, /Activity missing/);
   assert.match(html, /Nutrition missing/);
+  assert.match(html, /Confidence &amp; limits/);
+  assert.match(html, /Grounded on sleep and recovery data from the last 30 days\./);
+  assert.match(html, /Activity and nutrition are missing, so load and intake explanations remain incomplete\./);
+  assert.match(html, /Use this to support discussion, not autonomous medical direction\./);
 });
 
 test("sleep brief preserves the narrow sleep\/recovery wedge", () => {
@@ -293,5 +297,6 @@ test("sleep brief preserves the narrow sleep\/recovery wedge", () => {
   assert.equal(filename, "aveil-sleep-recovery-brief-2026-04-06.html");
   assert.match(html, /The clearest sleep\/recovery anomaly right now is sleep duration is below target/i);
   assert.match(html, /Sleep and recovery evidence/);
+  assert.match(html, /Use this to support a sleep\/recovery discussion, not autonomous medical direction\./);
   assert.doesNotMatch(html, /The clearest current health consult issue is steps: 4\.8k\/day/i);
 });

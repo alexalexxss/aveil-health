@@ -144,6 +144,25 @@
     margin:0;
     font-size:15px;
   }
+  .confidence-card{
+    margin:-4px 0 24px;
+    padding:16px 18px;
+    border:1px solid var(--border);
+    border-radius:18px;
+    background:#fbf8f2;
+  }
+  .confidence-card h2{
+    margin:0 0 8px;
+    font-size:15px;
+  }
+  .confidence-card p{
+    margin:0 0 8px;
+    font-size:14px;
+    color:var(--muted);
+  }
+  .confidence-card p:last-child{
+    margin-bottom:0;
+  }
   .section{
     margin-top:24px;
   }
@@ -329,6 +348,13 @@
       <div class="focus-card"><h3>What to ask</h3><p>Ask whether the main issue is total movement floor, structured exercise frequency, or inactivity between workouts.</p></div>
       <div class="focus-card"><h3>What to test next</h3><p>Generate a new brief after one week to see whether the pattern holds.</p></div>
     </div>
+
+    <div class="confidence-card">
+    <h2>Confidence &amp; limits</h2>
+    <p>Grounded on sleep, recovery, activity, and nutrition data from the last 30 days.</p>
+    <p>No major domain gap is obvious in this window, but the brief can still miss drivers that Apple Health does not capture.</p>
+    <p>Use this to support discussion, not autonomous medical direction.</p>
+  </div>
 
     <div class="section">
       <h2 class="section-title">Signals to bring into the consult</h2>
