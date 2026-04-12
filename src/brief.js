@@ -17,6 +17,7 @@ export function generateHealthConsultBriefHTML(report, options = {}) {
     days,
     focus: buildGenericFocus(primarySignal, days),
     availabilityItems: buildAvailabilityItems(report),
+    confidenceSummary: buildConfidenceSummary(report, { mode: "generic", days }),
     signals: displaySignals,
     metrics: buildMetricRows(report, primarySignal, { scope: "generic" }),
     stableItems: buildStableBackgroundMetrics(report, { primarySignal }),
@@ -38,6 +39,7 @@ export function generateSleepConsultBriefHTML(report, options = {}) {
     days,
     focus: buildSleepFocus(primarySignal, days),
     availabilityItems: buildAvailabilityItems(report),
+    confidenceSummary: buildConfidenceSummary(report, { mode: "sleep", days }),
     signals: displaySignals,
     metrics: buildMetricRows(report, primarySignal, { scope: "sleep" }),
     stableItems: buildStableBackgroundMetrics(report, { primarySignal }),
@@ -56,6 +58,7 @@ function renderConsultBrief({
   days,
   focus,
   availabilityItems,
+  confidenceSummary,
   signals,
   metrics,
   stableItems,
@@ -211,6 +214,25 @@ function renderConsultBrief({
   .focus-card p{
     margin:0;
     font-size:15px;
+  }
+  .confidence-card{
+    margin:-4px 0 24px;
+    padding:16px 18px;
+    border:1px solid var(--border);
+    border-radius:18px;
+    background:#fbf8f2;
+  }
+  .confidence-card h2{
+    margin:0 0 8px;
+    font-size:15px;
+  }
+  .confidence-card p{
+    margin:0 0 8px;
+    font-size:14px;
+    color:var(--muted);
+  }
+  .confidence-card p:last-child{
+    margin-bottom:0;
   }
   .section{
     margin-top:24px;
@@ -396,6 +418,8 @@ function renderConsultBrief({
       ${renderFocusCard("What to test next", focus.whatToTestNext)}
     </div>
 
+    ${renderConfidenceLimitsSection(confidenceSummary)}
+
     <div class="section">
       <h2 class="section-title">${mode === "sleep" ? "Signals to bring into the sleep/recovery consult" : "Signals to bring into the consult"}</h2>
       <p class="section-subtitle">${mode === "sleep" ? "These are the strongest sleep/recovery leads in the recent Apple Health window." : "These are the strongest cross-domain leads in the recent Apple Health window."}</p>
@@ -500,13 +524,22 @@ function buildSleepFocus(primarySignal, days) {
   };
 }
 
+const COVERAGE_DOMAINS = [
+  { key: "sleep", label: "Sleep", groundedLabel: "sleep", missingContext: "sleep timing/stage" },
+  { key: "recovery", label: "Recovery", groundedLabel: "recovery", missingContext: "recovery" },
+  { key: "activity", label: "Activity", groundedLabel: "activity", missingContext: "load" },
+  { key: "nutrition", label: "Nutrition", groundedLabel: "nutrition", missingContext: "intake" },
+];
+
+function collectCoverageDomains(report) {
+  return COVERAGE_DOMAINS.map((domain) => ({
+    ...domain,
+    available: Boolean(report?.[domain.key]?.available),
+  }));
+}
+
 function buildAvailabilityItems(report) {
-  return [
-    buildAvailabilityItem("Sleep", report?.sleep?.available),
-    buildAvailabilityItem("Recovery", report?.recovery?.available),
-    buildAvailabilityItem("Activity", report?.activity?.available),
-    buildAvailabilityItem("Nutrition", report?.nutrition?.available),
-  ];
+  return collectCoverageDomains(report).map((domain) => buildAvailabilityItem(domain.label, domain.available));
 }
 
 function buildAvailabilityItem(label, available) {
@@ -516,6 +549,31 @@ function buildAvailabilityItem(label, available) {
     present,
     text: `${label} ${present ? "present" : "missing"}`,
   };
+}
+
+function buildConfidenceSummary(report, { mode, days }) {
+  const domains = collectCoverageDomains(report);
+  const groundedOn = domains.filter((domain) => domain.available);
+  const missing = domains.filter((domain) => !domain.available);
+
+  return {
+    grounded: groundedOn.length
+      ? `Grounded on ${formatList(groundedOn.map((domain) => domain.groundedLabel))} data from the last ${days} days.`
+      : `Grounded on limited Apple Health data from the last ${days} days.`,
+    limits: missing.length
+      ? `${capitalizeFirst(formatList(missing.map((domain) => domain.label.toLowerCase())))} ${missing.length === 1 ? "is" : "are"} missing, so ${formatMissingContext(missing)}.`
+      : "No major domain gap is obvious in this window, but the brief can still miss drivers that Apple Health does not capture.",
+    posture: mode === "sleep"
+      ? "Use this to support a sleep/recovery discussion, not autonomous medical direction."
+      : "Use this to support discussion, not autonomous medical direction.",
+  };
+}
+
+function formatMissingContext(missingDomains) {
+  const contexts = formatList(missingDomains.map((domain) => domain.missingContext));
+  return missingDomains.length === 1
+    ? `${contexts} explanation remains incomplete`
+    : `${contexts} explanations remain incomplete`;
 }
 
 function buildDisplaySignals(report, { scope }) {
@@ -805,6 +863,17 @@ function renderAvailabilityStrip(items) {
   </div>`;
 }
 
+function renderConfidenceLimitsSection(summary) {
+  if (!summary) return "";
+
+  return `<div class="confidence-card">
+    <h2>Confidence &amp; limits</h2>
+    <p>${escapeHtml(summary.grounded)}</p>
+    <p>${escapeHtml(summary.limits)}</p>
+    <p>${escapeHtml(summary.posture)}</p>
+  </div>`;
+}
+
 function renderFocusCard(title, body) {
   return `<div class="focus-card"><h3>${escapeHtml(title)}</h3><p>${escapeHtml(body)}</p></div>`;
 }
@@ -1084,6 +1153,23 @@ function formatHour(decimalHour) {
 
 function formatFileDate(date) {
   return date.toISOString().slice(0, 10);
+}
+
+function formatList(items) {
+  const values = Array.isArray(items)
+    ? items.filter((item) => item != null && String(item).trim().length > 0).map((item) => String(item).trim())
+    : [];
+
+  if (!values.length) return "";
+  if (values.length === 1) return values[0];
+  if (values.length === 2) return `${values[0]} and ${values[1]}`;
+  return `${values.slice(0, -1).join(", ")}, and ${values.at(-1)}`;
+}
+
+function capitalizeFirst(value) {
+  const text = String(value || "");
+  if (!text) return "";
+  return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
 function titleCase(value) {
