@@ -19,6 +19,11 @@ export function generateHealthConsultBriefHTML(report, options = {}) {
     availabilityItems: buildAvailabilityItems(report),
     confidenceSummary: buildConfidenceSummary(report, { mode: "generic", days }),
     signals: displaySignals,
+    discussionQuestions: buildDiscussionQuestions(report, {
+      mode: "generic",
+      focus: buildGenericFocus(primarySignal, days),
+      signals: displaySignals,
+    }),
     metrics: buildMetricRows(report, primarySignal, { scope: "generic" }),
     stableItems: buildStableBackgroundMetrics(report, { primarySignal }),
   });
@@ -41,6 +46,11 @@ export function generateSleepConsultBriefHTML(report, options = {}) {
     availabilityItems: buildAvailabilityItems(report),
     confidenceSummary: buildConfidenceSummary(report, { mode: "sleep", days }),
     signals: displaySignals,
+    discussionQuestions: buildDiscussionQuestions(report, {
+      mode: "sleep",
+      focus: buildSleepFocus(primarySignal, days),
+      signals: displaySignals,
+    }),
     metrics: buildMetricRows(report, primarySignal, { scope: "sleep" }),
     stableItems: buildStableBackgroundMetrics(report, { primarySignal }),
   });
@@ -60,6 +70,7 @@ function renderConsultBrief({
   availabilityItems,
   confidenceSummary,
   signals,
+  discussionQuestions,
   metrics,
   stableItems,
 }) {
@@ -233,6 +244,31 @@ function renderConsultBrief({
   }
   .confidence-card p:last-child{
     margin-bottom:0;
+  }
+  .question-card{
+    margin:-4px 0 24px;
+    padding:16px 18px;
+    border:1px solid var(--border);
+    border-radius:18px;
+    background:#fff;
+  }
+  .question-card h2{
+    margin:0 0 8px;
+    font-size:15px;
+  }
+  .question-card p{
+    margin:0 0 12px;
+    font-size:14px;
+    color:var(--muted);
+  }
+  .question-list{
+    margin:0;
+    padding-left:18px;
+    color:var(--ink);
+    font-size:14px;
+  }
+  .question-list li + li{
+    margin-top:8px;
   }
   .section{
     margin-top:24px;
@@ -420,6 +456,8 @@ function renderConsultBrief({
 
     ${renderConfidenceLimitsSection(confidenceSummary)}
 
+    ${renderDiscussionQuestionsSection(discussionQuestions)}
+
     <div class="section">
       <h2 class="section-title">${mode === "sleep" ? "Signals to bring into the sleep/recovery consult" : "Signals to bring into the consult"}</h2>
       <p class="section-subtitle">${mode === "sleep" ? "These are the strongest sleep/recovery leads in the recent Apple Health window." : "These are the strongest cross-domain leads in the recent Apple Health window."}</p>
@@ -567,6 +605,33 @@ function buildConfidenceSummary(report, { mode, days }) {
       ? "Use this to support a sleep/recovery discussion, not autonomous medical direction."
       : "Use this to support discussion, not autonomous medical direction.",
   };
+}
+
+function buildDiscussionQuestions(report, { mode, focus, signals }) {
+  const coverageDomains = collectCoverageDomains(report);
+  const missingDomains = coverageDomains.filter((domain) => !domain.available);
+  const leadSignal = Array.isArray(signals) && signals.length
+    ? signals[0]
+    : toDisplaySignal(synthesizeFallbackSignal(mode === "sleep" ? "sleep" : "generic"));
+  const leadTitle = cleanPromptLabel(leadSignal.title || focus?.focusLabel || "this pattern");
+  const followUpMove = cleanPromptLabel(leadSignal.move || focus?.whatToTestNext || "the current strongest pattern");
+
+  const questions = [
+    mode === "sleep"
+      ? `Does ${leadTitle} look like the main sleep/recovery issue to follow up on, or could it still be routine noise?`
+      : `Does ${leadTitle} look meaningful enough to follow up on now, or should it be rechecked after another week of data?`,
+    `Which single follow-up would best test this pattern before the next visit, ${followUpMove} or a different metric?`,
+  ];
+
+  if (missingDomains.length) {
+    questions.push(
+      `Would ${formatList(missingDomains.map((domain) => domain.label.toLowerCase()))} data materially change how you interpret this pattern?`
+    );
+  } else {
+    questions.push("Which metric from this brief would be the best one to re-check before the next visit?");
+  }
+
+  return questions;
 }
 
 function formatMissingContext(missingDomains) {
@@ -874,6 +939,19 @@ function renderConfidenceLimitsSection(summary) {
   </div>`;
 }
 
+function renderDiscussionQuestionsSection(questions) {
+  const items = Array.isArray(questions) ? questions.filter(Boolean) : [];
+  if (!items.length) return "";
+
+  return `<div class="question-card">
+    <h2>Questions for your clinician/coach</h2>
+    <p>Use these as discussion prompts, not as self-diagnosis.</p>
+    <ul class="question-list">
+      ${items.map((question) => `<li>${escapeHtml(question)}</li>`).join("")}
+    </ul>
+  </div>`;
+}
+
 function renderFocusCard(title, body) {
   return `<div class="focus-card"><h3>${escapeHtml(title)}</h3><p>${escapeHtml(body)}</p></div>`;
 }
@@ -1178,6 +1256,14 @@ function titleCase(value) {
     .filter(Boolean)
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(" ");
+}
+
+function cleanPromptLabel(value) {
+  return String(value || "this pattern")
+    .trim()
+    .replace(/[.?!]+$/g, "")
+    .replace(/^['"“”]+|['"“”]+$/g, "")
+    .toLowerCase();
 }
 
 function escapeHtml(value) {

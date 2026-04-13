@@ -163,6 +163,31 @@
   .confidence-card p:last-child{
     margin-bottom:0;
   }
+  .question-card{
+    margin:-4px 0 24px;
+    padding:16px 18px;
+    border:1px solid var(--border);
+    border-radius:18px;
+    background:#fff;
+  }
+  .question-card h2{
+    margin:0 0 8px;
+    font-size:15px;
+  }
+  .question-card p{
+    margin:0 0 12px;
+    font-size:14px;
+    color:var(--muted);
+  }
+  .question-list{
+    margin:0;
+    padding-left:18px;
+    color:var(--ink);
+    font-size:14px;
+  }
+  .question-list li + li{
+    margin-top:8px;
+  }
   .section{
     margin-top:24px;
   }
@@ -354,6 +379,14 @@
     <p>Grounded on sleep, recovery, activity, and nutrition data from the last 30 days.</p>
     <p>No major domain gap is obvious in this window, but the brief can still miss drivers that Apple Health does not capture.</p>
     <p>Use this to support a sleep/recovery discussion, not autonomous medical direction.</p>
+  </div>
+
+    <div class="question-card">
+    <h2>Questions for your clinician/coach</h2>
+    <p>Use these as discussion prompts, not as self-diagnosis.</p>
+    <ul class="question-list">
+      <li>Does sleep duration is below target look like the main sleep/recovery issue to follow up on, or could it still be routine noise?</li><li>Which single follow-up would best test this pattern before the next visit, protect sleep timing for the next 7 days or a different metric?</li><li>Which metric from this brief would be the best one to re-check before the next visit?</li>
+    </ul>
   </div>
 
     <div class="section">

@@ -225,6 +225,10 @@ test("brief shows truthful coverage plus grounded confidence and limits for mixe
   assert.match(html, /Grounded on sleep and recovery data from the last 30 days\./);
   assert.match(html, /Activity and nutrition are missing, so load and intake explanations remain incomplete\./);
   assert.match(html, /Use this to support discussion, not autonomous medical direction\./);
+  assert.match(html, /Questions for your clinician\/coach/);
+  assert.match(html, /Does sleep duration is below target look meaningful enough to follow up on now, or should it be rechecked after another week of data\?/);
+  assert.match(html, /Which single follow-up would best test this pattern before the next visit, protect sleep timing for the next 7 days or a different metric\?/);
+  assert.match(html, /Would activity and nutrition data materially change how you interpret this pattern\?/);
 });
 
 test("sleep brief preserves the narrow sleep\/recovery wedge", () => {
@@ -298,5 +302,7 @@ test("sleep brief preserves the narrow sleep\/recovery wedge", () => {
   assert.match(html, /The clearest sleep\/recovery anomaly right now is sleep duration is below target/i);
   assert.match(html, /Sleep and recovery evidence/);
   assert.match(html, /Use this to support a sleep\/recovery discussion, not autonomous medical direction\./);
+  assert.match(html, /Questions for your clinician\/coach/);
+  assert.match(html, /Does sleep duration is below target look like the main sleep\/recovery issue to follow up on, or could it still be routine noise\?/);
   assert.doesNotMatch(html, /The clearest current health consult issue is steps: 4\.8k\/day/i);
 });
