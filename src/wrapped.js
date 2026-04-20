@@ -188,7 +188,7 @@ export function computeWalkStat(report) {
 
   return {
     text: bestRoute
-      ? `Walked ${Math.round(km).toLocaleString()}km — the distance from ${bestRoute.route}`
+      ? `Walked ${Math.round(km).toLocaleString()}km, the distance from ${bestRoute.route}`
       : `Walked ${Math.round(km).toLocaleString()}km in this period`,
   };
 }
@@ -268,8 +268,15 @@ export function computeDerivedStat(report) {
   if (report.sleep?.available && report.sleep.averages?.deepMinutes > 0) {
     const nights = report.sleep.nightsAnalyzed || 14;
     const totalDeepHours = Math.round(report.sleep.averages.deepMinutes * nights / 60);
+    const averageDeepMinutes = report.sleep.averages.deepMinutes;
     if (totalDeepHours > 10) {
-      stats.push({ text: `${totalDeepHours} hours in deep sleep — when your body actually repairs`, impact: totalDeepHours / 5 });
+      let descriptor = "a solid base to build on";
+      if (averageDeepMinutes >= 75) descriptor = "a standout recovery signal";
+      else if (averageDeepMinutes >= 60) descriptor = "a strong recovery pattern";
+      stats.push({
+        text: `${totalDeepHours} hours of deep sleep total, averaging ${averageDeepMinutes} min a night, ${descriptor}`,
+        impact: totalDeepHours / 5,
+      });
     }
   }
 
@@ -479,6 +486,7 @@ export function generateWrappedHTML(report, options = {}) {
   const heroBoast = computeHeroBoast(report, comparisons);
   const walkStat = computeWalkStat(report);
   const calorieEq = computeCalorieEquivalence(report);
+  const derivedStat = computeDerivedStat(report);
   const score = report.overall?.score ?? 0;
   const pct = Math.min(100, Math.max(0, score));
   const isElite = identity.elite === true;
@@ -495,37 +503,79 @@ export function generateWrappedHTML(report, options = {}) {
   const periodStart = startDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
   const periodEnd = endDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
   const periodLabel = periodStart === periodEnd ? periodStart : `${periodStart} – ${periodEnd}`;
+  const scoreDegrees = pct * 3.6;
 
-  // Stats grid items
   const gridItems = [];
   if (report.sleep?.available && report.sleep.averages) {
     gridItems.push({
-      label: "Sleep",
+      label: 'Sleep',
       value: `${(report.sleep.averages.durationMinutes / 60).toFixed(1)}h avg`,
       sub: `Deep ${report.sleep.averages.deepMinutes}m · REM ${report.sleep.averages.remMinutes}m`,
     });
   }
   if (report.recovery?.available) {
     gridItems.push({
-      label: "Recovery",
-      value: `HRV ${report.recovery.latestHRV || report.recovery.averageHRV || "—"}ms`,
-      sub: report.recovery.readiness || "—",
+      label: 'Recovery',
+      value: `HRV ${report.recovery.latestHRV || report.recovery.averageHRV || '—'}ms`,
+      sub: report.recovery.readiness || '—',
     });
   }
   if (report.activity?.available && report.activity.averages) {
     gridItems.push({
-      label: "Activity",
-      value: `${report.activity.averages.activeEnergyPerDay?.toLocaleString() || "—"} kcal/day`,
-      sub: "active energy avg",
+      label: 'Activity',
+      value: `${report.activity.averages.activeEnergyPerDay?.toLocaleString() || '—'} kcal/day`,
+      sub: 'active energy avg',
     });
   }
   if (report.sleep?.available && report.sleep.averages?.bedtimeVariability != null) {
     gridItems.push({
-      label: "Consistency",
+      label: 'Consistency',
       value: `±${Math.round(report.sleep.averages.bedtimeVariability * 60)}min`,
-      sub: "bedtime variability",
+      sub: 'bedtime variability',
     });
   }
+
+  function featureBlock(icon, text, toneClass = '', accentValue = false) {
+    const tone = toneClass ? ` ${toneClass}` : '';
+    const accentClass = accentValue ? ' feature-value-accent' : '';
+    return `<div class="feature${tone}"><div class="feature-icon">${icon}</div><div class="feature-value${accentClass}">${escapeHtml(text)}</div></div>`;
+  }
+
+  function featureRow(icon, text) {
+    return `<div class="feature-row"><div class="feature-row-icon">${icon}</div><div class="feature-row-text">${escapeHtml(text)}</div></div>`;
+  }
+
+  const percentileIcon = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 3l2.6 5.3 5.9.9-4.2 4.1 1 5.8L12 16.3 6.7 19.1l1-5.8L3.5 9.2l5.9-.9L12 3z" stroke="#D97A2B" stroke-width="1.5" stroke-linejoin="round"/></svg>`;
+  const distanceIcon = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 20s-5-4.35-5-8.5C7 8.46 9.24 6 12 6s5 2.46 5 5.5C17 15.65 12 20 12 20Z" stroke="#D97A2B" stroke-width="1.5" stroke-linejoin="round"/><circle cx="12" cy="11.5" r="1.6" fill="#D97A2B"/></svg>`;
+  const energyIcon = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 22c-3 0-6-1.7-6-5.5 0-2.8 2.4-5.6 3.8-7.5.3-.4.8-.6 1.3-.6h1.8c.5 0 1 .2 1.3.6 1.4 1.9 3.8 4.7 3.8 7.5C18 20.3 15 22 12 22z" stroke="#D97A2B" stroke-width="1.4"/><path d="M12 18.5c-1.2 0-2.4-.7-2.4-2 0-1 1-2.3 1.6-3.1.2-.2.4-.3.6-.3h.4c.2 0 .4.1.6.3.6.8 1.6 2.1 1.6 3.1 0 1.3-1.2 2-2.4 2z" fill="#D97A2B" opacity="0.22"/></svg>`;
+  const sleepIcon = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M20 14.2A8.5 8.5 0 119.8 4 6.8 6.8 0 0020 14.2z" stroke="#D97A2B" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  const whiteDistanceIcon = tintSvg(distanceIcon, '#F2ECE0');
+  const whiteEnergyIcon = tintSvg(energyIcon, '#F2ECE0');
+  const whiteSleepIcon = tintSvg(sleepIcon, '#F2ECE0');
+
+  const combinedFeatureRows = [
+    walkStat?.text ? featureRow(whiteDistanceIcon, walkStat.text) : null,
+    calorieEq?.text ? featureRow(whiteEnergyIcon, calorieEq.text) : null,
+    derivedStat?.text ? featureRow(whiteSleepIcon, derivedStat.text) : null,
+  ].filter(Boolean).join('');
+  const combinedFeatureHTML = combinedFeatureRows
+    ? `<div class="feature feature-group">${combinedFeatureRows}</div>`
+    : '';
+
+  const gridRows = gridItems.map((g) => `<div class="grid-item"><div class="grid-label">${escapeHtml(g.label)}</div><div class="grid-value">${escapeHtml(g.value)}</div><div class="grid-sub">${escapeHtml(g.sub)}</div></div>`).join('');
+  const gridHTML = gridRows ? `<div class="grid">${gridRows}</div>` : '';
+
+  const comparisonRows = comparisons.map((c) => {
+    const factHTML = c.fact ? `<div class="comp-fact">${escapeHtml(c.fact)}</div>` : '';
+    return `<div class="comp-item"><div style="display:flex;justify-content:space-between;align-items:center;width:100%"><div class="comp-left"><div class="comp-metric">${escapeHtml(c.metric)}</div><div class="comp-value">${escapeHtml(c.value)}</div></div><div class="comp-right"><div class="comp-tier">${escapeHtml(c.tier)}</div><div class="comp-pct">${escapeHtml(c.pct)}</div></div></div>${factHTML}</div>`;
+  }).join('');
+  const comparisonsHTML = comparisonRows ? `<div class="comparisons"><div class="section-title">How You Compare</div>${comparisonRows}</div>` : '';
+
+  const surprisingRows = surprising.map((s) => `<div class="surprising-item"><div><div class="surprising-label">${escapeHtml(s.label)}</div><div class="surprising-detail">${escapeHtml(s.detail)}</div></div><div class="surprising-value">${escapeHtml(s.value)}</div></div>`).join('');
+  const surprisingHTML = surprisingRows ? `<div class="surprising"><div class="section-title">Highlights</div>${surprisingRows}</div>` : '';
+
+  const insightRows = insights.map((i) => `<div class="insight"><div class="insight-title">${escapeHtml(i.title)}</div><div class="insight-detail">${escapeHtml(i.detail)}</div></div>`).join('');
+  const insightsHTML = insightRows ? `<div class="insights"><div class="section-title">Insights</div>${insightRows}</div>` : '';
 
   const html = `<!DOCTYPE html>
 <html lang="en">
@@ -557,59 +607,60 @@ export function generateWrappedHTML(report, options = {}) {
 }
 *{margin:0;padding:0;box-sizing:border-box}
 body{background:var(--bg);color:var(--ink);font-family:var(--sans);display:flex;justify-content:center;padding:32px 16px;font-feature-settings:"tnum" 1;-webkit-font-smoothing:antialiased}
-.card{width:600px;max-width:100%;background:var(--bg-2);border:1px solid var(--rule);border-radius:24px;overflow:hidden;padding:40px 32px}
-.header{text-align:center;margin-bottom:32px}
-.logo{font-family:var(--mono);font-size:11px;letter-spacing:.20em;color:var(--amber);font-weight:400;margin-bottom:10px;text-transform:uppercase}
-.subtitle{font-family:var(--sans);font-size:12px;color:var(--ink-3);letter-spacing:.10em;font-weight:400;text-transform:uppercase}
-.score-section{text-align:center;margin-bottom:24px}
-.score-ring{width:140px;height:140px;border-radius:50%;background:conic-gradient(${color} ${pct * 3.6}deg,rgba(242,236,224,0.08) ${pct * 3.6}deg);display:inline-flex;align-items:center;justify-content:center;position:relative;box-shadow:${ringGlow}}
-.score-inner{width:110px;height:110px;border-radius:50%;background:var(--bg-2);display:flex;flex-direction:column;align-items:center;justify-content:center}
-.score-num{font-family:var(--mono);font-size:36px;font-weight:500;color:var(--ink)}
-.score-label{font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:2px;letter-spacing:.18em;text-transform:uppercase}
+.card{width:620px;max-width:100%;background:var(--bg-2);border:1px solid var(--rule);border-radius:4px;overflow:hidden;padding:40px 32px}
+.header{text-align:center;margin-bottom:30px}
+.logo{font-family:var(--mono);font-weight:400;font-size:11px;letter-spacing:.20em;color:var(--amber);margin-bottom:10px;text-transform:uppercase}
+.subtitle{font-family:var(--sans);font-weight:400;font-size:28px;line-height:1.08;letter-spacing:-.02em;color:var(--ink);max-width:320px;margin:0 auto}
+.score-section{text-align:center;margin-bottom:28px}
+.score-ring{width:136px;height:136px;border-radius:50%;background:conic-gradient(${color} ${scoreDegrees}deg,rgba(242,236,224,0.08) ${scoreDegrees}deg);display:inline-flex;align-items:center;justify-content:center;position:relative;box-shadow:${ringGlow}}
+.score-inner{width:124px;height:124px;border-radius:50%;background:var(--bg-2);display:flex;flex-direction:column;align-items:center;justify-content:center}
+.score-num{font-family:var(--mono);font-weight:500;font-size:32px;color:var(--ink);line-height:1}
+.score-label{font-family:var(--mono);font-weight:400;font-size:10px;color:var(--muted);margin-top:6px;letter-spacing:.20em;text-transform:uppercase}
 .identity{text-align:center;margin-bottom:28px}
-.identity-icon{margin-bottom:4px;display:flex;justify-content:center;align-items:center}
-.identity-title{font-family:var(--sans);font-size:22px;font-weight:500;color:var(--ink);margin:4px 0;letter-spacing:-.01em}
-.identity-tagline{font-family:var(--serif);font-size:14px;color:var(--ink-2);font-style:italic;line-height:1.55}
-.hero-boast{text-align:center;margin-bottom:24px}
-.hero-boast-text{display:inline-block;font-family:var(--sans);font-size:18px;font-weight:500;color:${color};background:rgba(217,122,43,0.06);border:1px solid rgba(217,122,43,0.18);border-radius:14px;padding:14px 28px;letter-spacing:-.01em}
-.derived-stat{text-align:center;margin-bottom:24px;padding:14px 20px;background:var(--bg-3);border:1px solid var(--rule);border-radius:14px}
-.derived-stat-text{font-family:var(--serif);font-size:15px;color:var(--ink);font-weight:400;line-height:1.55;font-style:italic}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:24px}
-.grid-item{background:var(--bg-3);border:1px solid var(--rule);border-radius:12px;padding:14px 16px}
-.grid-label{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.20em;color:var(--amber);margin-bottom:6px}
-.grid-value{font-family:var(--mono);font-size:18px;font-weight:500;color:var(--ink)}
-.grid-sub{font-family:var(--serif);font-size:12px;color:var(--ink-3);margin-top:4px;line-height:1.45}
-.section-title{font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:.20em;color:var(--amber);margin-bottom:12px;padding-top:8px}
-.comparisons{margin-bottom:24px}
-.comp-item{display:flex;flex-direction:column;padding:10px 0;border-bottom:1px solid var(--rule)}
-.comp-item:last-child{border-bottom:none}
+.identity-icon{margin:0 auto 10px;display:flex;justify-content:center;align-items:center}
+.identity-icon svg{width:42px;height:42px;display:block}
+.identity-title{font-family:var(--sans);font-weight:500;font-size:21px;color:var(--ink);margin:6px 0;letter-spacing:-.01em;line-height:1.2}
+.identity-tagline{font-family:var(--serif);font-weight:300;font-style:italic;font-size:16px;color:var(--ink-2);line-height:1.55;max-width:440px;margin:0 auto}
+.feature{margin-bottom:14px;padding:16px 18px;background:var(--bg-3);border:1px solid var(--rule);border-radius:4px;text-align:center}
+.feature-icon{width:20px;height:20px;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin:0 auto 10px}
+.feature-value{font-family:var(--serif);font-weight:400;font-style:italic;font-size:17px;color:var(--ink);line-height:1.55}
+.feature-value-accent{font-family:var(--sans);font-style:normal;font-weight:500;font-size:18px;color:var(--amber);letter-spacing:-.01em}
+.feature-primary{border-color:rgba(217,122,43,0.22);background:rgba(217,122,43,0.06);display:flex;align-items:center;justify-content:center;gap:12px;text-align:left}
+.feature-primary .feature-icon{margin:0}
+.feature-group{padding:18px 20px;text-align:left}
+.feature-row{display:flex;align-items:center;justify-content:flex-start;gap:12px;text-align:left}
+.feature-row + .feature-row{margin-top:12px;padding-top:12px;border-top:1px solid var(--rule)}
+.feature-row-icon{width:18px;height:18px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.feature-row-text{font-family:var(--sans);font-weight:500;font-size:16px;color:var(--ink);line-height:1.45}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:24px}
+.grid-item{background:var(--bg-3);border:1px solid var(--rule);border-radius:4px;padding:16px}
+.grid-label{font-family:var(--mono);font-weight:400;font-size:11px;text-transform:uppercase;letter-spacing:.20em;color:var(--amber);margin-bottom:8px}
+.grid-value{font-family:var(--mono);font-weight:500;font-size:20px;color:var(--ink);line-height:1.15}
+.grid-sub{font-family:var(--serif);font-weight:400;font-size:13px;color:var(--ink-3);margin-top:6px;line-height:1.45}
+.section-title{font-family:var(--mono);font-weight:400;font-size:11px;text-transform:uppercase;letter-spacing:.20em;color:var(--amber);margin-bottom:12px;padding-top:4px}
+.comparisons,.surprising,.insights{margin-bottom:24px}
+.comp-item,.surprising-item,.insight{padding:14px;border:1px solid var(--rule);border-radius:4px;background:var(--bg-3);margin-bottom:8px}
+.comp-item:last-child,.surprising-item:last-child,.insight:last-child{margin-bottom:0}
 .comp-left{display:flex;flex-direction:column}
-.comp-metric{font-family:var(--mono);font-size:11px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.18em}
-.comp-value{font-family:var(--mono);font-size:14px;font-weight:500;color:var(--ink);margin-top:4px}
+.comp-metric{font-family:var(--mono);font-weight:400;font-size:11px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.20em}
+.comp-value{font-family:var(--mono);font-weight:500;font-size:16px;color:var(--ink);margin-top:4px}
 .comp-right{text-align:right}
-.comp-tier{font-family:var(--sans);font-size:13px;font-weight:500;color:var(--amber)}
-.comp-pct{font-family:var(--mono);font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.18em}
-.comp-fact{font-family:var(--serif);font-size:12px;color:var(--ink-3);margin-top:8px;font-style:italic;text-align:center;padding:0 8px;line-height:1.5}
-.surprising{margin-bottom:24px}
-.surprising-item{display:flex;justify-content:space-between;align-items:baseline;padding:8px 0;border-bottom:1px solid var(--rule)}
-.surprising-item:last-child{border-bottom:none}
-.surprising-label{font-family:var(--mono);font-size:11px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.18em}
-.surprising-value{font-family:var(--mono);font-size:16px;font-weight:500;color:var(--ink)}
-.surprising-detail{font-family:var(--serif);font-size:11px;color:var(--muted);margin-top:3px}
-.insights{margin-bottom:28px}
-.insight{padding:10px 0;border-bottom:1px solid var(--rule)}
-.insight:last-child{border-bottom:none}
-.insight-title{font-family:var(--sans);font-size:14px;font-weight:500;color:var(--ink);letter-spacing:-.01em}
-.insight-detail{font-family:var(--serif);font-size:12px;color:var(--ink-2);margin-top:4px;line-height:1.55}
-.footer{text-align:center;padding-top:20px;border-top:1px solid var(--rule)}
-.footer-brand{font-family:var(--serif);font-size:12px;color:var(--ink-3);margin-bottom:6px}
-.footer-compat{font-family:var(--mono);font-size:10px;color:var(--muted);margin-bottom:6px;letter-spacing:.14em;text-transform:uppercase}
-.footer-mcp{display:inline-block;font-family:var(--mono);font-size:10px;color:var(--amber);background:rgba(217,122,43,0.08);border:1px solid rgba(217,122,43,0.18);border-radius:6px;padding:2px 8px;margin:6px 0;letter-spacing:.12em;text-transform:uppercase}
-.footer-github{font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:6px}
-.calorie-eq{display:flex;align-items:center;gap:10px;justify-content:center;margin-bottom:24px;padding:12px 20px;background:rgba(217,122,43,0.06);border:1px solid rgba(217,122,43,0.18);border-radius:14px}
-.calorie-eq-icon{flex-shrink:0;display:flex;align-items:center}
-.calorie-eq-text{font-family:var(--sans);font-size:13px;color:var(--amber);font-weight:500;line-height:1.45}
-.header-privacy{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.14em;margin-top:6px;text-transform:uppercase}
+.comp-tier{font-family:var(--sans);font-weight:500;font-size:14px;color:var(--amber);letter-spacing:-.01em}
+.comp-pct{font-family:var(--mono);font-weight:400;font-size:10px;color:var(--muted);letter-spacing:.20em;text-transform:uppercase;margin-top:2px}
+.comp-fact{font-family:var(--serif);font-weight:300;font-style:italic;font-size:13px;color:var(--ink-3);margin-top:10px;text-align:left;line-height:1.55;border-top:1px solid var(--rule);padding-top:10px}
+.surprising-item{display:flex;justify-content:space-between;align-items:baseline}
+.surprising-label{font-family:var(--mono);font-weight:400;font-size:11px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.20em}
+.surprising-value{font-family:var(--mono);font-weight:500;font-size:22px;color:var(--ink)}
+.surprising-detail{font-family:var(--serif);font-weight:400;font-size:12px;color:var(--muted);margin-top:4px;line-height:1.5}
+.insight-title{font-family:var(--sans);font-weight:500;font-size:15px;color:var(--ink);letter-spacing:-.01em}
+.insight-detail{font-family:var(--serif);font-weight:400;font-size:14px;color:var(--ink-2);margin-top:6px;line-height:1.55}
+@media (max-width:640px){
+  body{padding:16px}
+  .card{padding:30px 20px;border-radius:4px}
+  .grid{grid-template-columns:1fr}
+  .subtitle{font-size:24px;max-width:248px}
+  .identity-title{font-size:20px}
+}
 </style>
 </head>
 <body>
@@ -617,7 +668,6 @@ body{background:var(--bg);color:var(--ink);font-family:var(--sans);display:flex;
   <div class="header">
     <div class="logo">AVEIL WRAPPED</div>
     <div class="subtitle">${escapeHtml(periodLabel)}</div>
-    <div class="header-privacy">🔒 100% local</div>
   </div>
 
   <div class="score-section">
@@ -635,69 +685,12 @@ body{background:var(--bg);color:var(--ink);font-family:var(--sans);display:flex;
     <div class="identity-tagline">${escapeHtml(identity.tagline)}</div>
   </div>
 
-  ${heroBoast ? `<div class="hero-boast">
-    <div class="hero-boast-text">${escapeHtml(heroBoast.text)}</div>
-  </div>` : ""}
-
-  ${walkStat ? `<div class="derived-stat">
-    <div class="derived-stat-text">${escapeHtml(walkStat.text)}</div>
-  </div>` : ""}
-
-  ${calorieEq ? `<div class="calorie-eq">
-    <div class="calorie-eq-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 23c-3.2 0-7-1.8-7-6.4 0-3.6 3.2-7.2 5-9.6.4-.5 1-.8 1.6-.8h.8c.6 0 1.2.3 1.6.8 1.8 2.4 5 6 5 9.6 0 4.6-3.8 6.4-7 6.4z" stroke="#f59e0b" stroke-width="1.5" fill="none"/><path d="M12 23c-1.6 0-3.5-.9-3.5-3.2 0-1.8 1.6-3.6 2.5-4.8.2-.2.5-.4.8-.4h.4c.3 0 .6.2.8.4.9 1.2 2.5 3 2.5 4.8 0 2.3-1.9 3.2-3.5 3.2z" fill="#f59e0b" opacity="0.3"/></svg></div>
-    <div class="calorie-eq-text">${escapeHtml(calorieEq.text)}</div>
-  </div>` : ""}
-
-  ${gridItems.length ? `<div class="grid">${gridItems.map((g) => `
-    <div class="grid-item">
-      <div class="grid-label">${escapeHtml(g.label)}</div>
-      <div class="grid-value">${escapeHtml(g.value)}</div>
-      <div class="grid-sub">${escapeHtml(g.sub)}</div>
-    </div>`).join("")}
-  </div>` : ""}
-
-  ${comparisons.length ? `<div class="comparisons">
-    <div class="section-title">How You Compare</div>
-    ${comparisons.map((c) => `<div class="comp-item">
-      <div style="display:flex;justify-content:space-between;align-items:center;width:100%">
-        <div class="comp-left">
-          <div class="comp-metric">${escapeHtml(c.metric)}</div>
-          <div class="comp-value">${escapeHtml(c.value)}</div>
-        </div>
-        <div class="comp-right">
-          <div class="comp-tier">${escapeHtml(c.tier)}</div>
-          <div class="comp-pct">${escapeHtml(c.pct)}</div>
-        </div>
-      </div>
-      ${c.fact ? `<div class="comp-fact">${escapeHtml(c.fact)}</div>` : ""}
-    </div>`).join("")}
-  </div>` : ""}
-
-  ${surprising.length ? `<div class="surprising">
-    <div class="section-title">Highlights</div>
-    ${surprising.map((s) => `<div class="surprising-item">
-      <div>
-        <div class="surprising-label">${escapeHtml(s.label)}</div>
-        <div class="surprising-detail">${escapeHtml(s.detail)}</div>
-      </div>
-      <div class="surprising-value">${escapeHtml(s.value)}</div>
-    </div>`).join("")}
-  </div>` : ""}
-
-  ${insights.length ? `<div class="insights">
-    <div class="section-title">Insights</div>
-    ${insights.map((i) => `<div class="insight">
-      <div class="insight-title">${escapeHtml(i.title)}</div>
-      <div class="insight-detail">${escapeHtml(i.detail)}</div>
-    </div>`).join("")}
-  </div>` : ""}
-
-  <div class="footer">
-    <div class="footer-brand">Generated with <a href="https://aveilx.com" style="color:var(--amber);text-decoration:none">aveil-health</a> · <a href="https://aveilx.com" style="color:var(--amber);text-decoration:none">aveilx.com</a></div>
-    <div class="footer-compat">Works with Claude Code · Local Models · Codex · OpenClaw</div>
-    <div class="footer-mcp">🔌 MCP Server Available</div>
-    <div class="footer-github"><a href="https://github.com/alexalexxss/aveil-health" style="color:var(--ink-3);text-decoration:none">github.com/alexalexxss/aveil-health</a></div>
-  </div>
+  ${heroBoast?.text ? featureBlock(percentileIcon, heroBoast.text, 'feature-primary', true) : ''}
+  ${combinedFeatureHTML}
+  ${gridHTML}
+  ${comparisonsHTML}
+  ${surprisingHTML}
+  ${insightsHTML}
 </div>
 </body>
 </html>`;
