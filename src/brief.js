@@ -69,19 +69,23 @@ function renderConsultBrief({
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>${escapeHtml(title)}</title>
+<link rel="preconnect" href="https://api.fontshare.com">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://api.fontshare.com/v2/css?f[]=switzer@300,400,500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,300;0,400;1,300;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root{
-    --bg:#f6f4ef;
-    --paper:#fffdf8;
-    --ink:#16130d;
-    --muted:#6f6558;
-    --border:#e7decd;
-    --accent:#4338ca;
-    --accent-soft:#ebe9fe;
-    --warn:#92400e;
-    --warn-soft:#fff4e5;
-    --good:#166534;
-    --good-soft:#ecfdf3;
+    --bg:#F7F3EB;
+    --paper:#F7F3EB;
+    --ink:#0C0907;
+    --muted:#3D342A;
+    --rule:rgba(12,9,7,0.12);
+    --rule-soft:rgba(12,9,7,0.08);
+    --accent:#D97A2B;
+    --serif:"Newsreader",Georgia,serif;
+    --sans:"Switzer",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,monospace;
   }
   *{box-sizing:border-box}
   body{
@@ -89,22 +93,23 @@ function renderConsultBrief({
     padding:32px;
     background:var(--bg);
     color:var(--ink);
-    font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    font-family:var(--sans);
     line-height:1.45;
+    font-feature-settings:"tnum" 1;
   }
   .page{
     max-width:980px;
     margin:0 auto;
     background:var(--paper);
-    border:1px solid var(--border);
-    border-radius:24px;
+    border:1px solid var(--rule);
+    border-radius:6px;
     padding:36px;
-    box-shadow:0 18px 50px rgba(22,19,13,.08);
   }
   .eyebrow{
-    font-size:12px;
-    font-weight:700;
-    letter-spacing:.12em;
+    font-family:var(--mono);
+    font-size:10px;
+    font-weight:400;
+    letter-spacing:.20em;
     text-transform:uppercase;
     color:var(--accent);
     margin-bottom:10px;
@@ -117,48 +122,82 @@ function renderConsultBrief({
     margin-bottom:24px;
   }
   .hero h1{
-    margin:0 0 10px;
-    font-size:34px;
-    line-height:1.08;
+    margin:0 0 12px;
+    font-family:var(--sans);
+    font-weight:500;
+    font-size:28px;
+    line-height:1.05;
+    letter-spacing:-.015em;
+    color:var(--ink);
   }
   .hero p{
     margin:0;
     color:var(--muted);
+    font-family:var(--serif);
     font-size:15px;
+    line-height:1.5;
   }
   .hero-card{
-    border:1px solid var(--border);
-    border-radius:18px;
+    border:1px solid var(--rule);
+    border-radius:6px;
     padding:18px;
-    background:#fff;
+    background:transparent;
   }
   .hero-card h2{
     margin:0 0 10px;
-    font-size:15px;
+    font-family:var(--sans);
+    font-weight:500;
+    font-size:14px;
+    letter-spacing:-.01em;
+    color:var(--ink);
   }
   .hero-card ul{
+    list-style:none;
     margin:0;
-    padding-left:18px;
+    padding:0;
     color:var(--muted);
+    display:grid;
+    gap:10px;
+    font-family:var(--serif);
+    font-size:13px;
+    line-height:1.45;
+  }
+  .hero-card li{
+    display:grid;
+    grid-template-columns:10px minmax(0,1fr);
+    column-gap:8px;
+    align-items:start;
+  }
+  .hero-card li::before{
+    content:"\\2022";
+    color:var(--accent);
+    font-weight:500;
+    line-height:1.4;
   }
   .meta-row{
     display:flex;
     flex-wrap:wrap;
     gap:10px;
     margin:14px 0 0;
+    font-family:var(--mono);
+    font-size:10px;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    color:var(--muted);
   }
   .chip{
     display:inline-flex;
     align-items:center;
     gap:6px;
-    padding:7px 10px;
-    border-radius:999px;
-    background:#fff;
-    border:1px solid var(--border);
-    font-size:12px;
+    padding:0;
+    border-radius:0;
+    background:transparent;
+    border:none;
+    font-size:10px;
     color:var(--muted);
+    font-family:var(--mono);
   }
-  .chip strong{color:var(--ink)}
+  .chip strong{color:var(--ink);font-weight:500;margin-right:4px}
   .focus-grid{
     display:grid;
     grid-template-columns:repeat(2,minmax(0,1fr));
@@ -166,43 +205,54 @@ function renderConsultBrief({
     margin:18px 0 26px;
   }
   .focus-card{
-    border:1px solid var(--border);
-    border-radius:18px;
+    border:1px solid var(--rule);
+    border-radius:6px;
     padding:18px;
-    background:#fff;
+    background:transparent;
   }
   .focus-card h3{
     margin:0 0 8px;
-    font-size:13px;
-    letter-spacing:.06em;
+    font-family:var(--mono);
+    font-size:10px;
+    font-weight:400;
+    letter-spacing:.20em;
     text-transform:uppercase;
-    color:var(--muted);
+    color:var(--accent);
   }
   .focus-card p{
     margin:0;
-    font-size:15px;
+    font-family:var(--serif);
+    font-size:14px;
+    line-height:1.55;
+    color:var(--ink);
   }
   .section{
     margin-top:24px;
   }
   .section-title{
     margin:0 0 12px;
-    font-size:19px;
+    font-family:var(--sans);
+    font-size:16px;
+    font-weight:500;
+    letter-spacing:-.015em;
+    color:var(--ink);
   }
   .section-subtitle{
     margin:-2px 0 14px;
     color:var(--muted);
-    font-size:14px;
+    font-family:var(--serif);
+    font-size:13px;
+    line-height:1.45;
   }
   .signal-list{
     display:grid;
     gap:12px;
   }
   .signal-card{
-    border:1px solid var(--border);
-    border-radius:16px;
+    border:1px solid var(--rule);
+    border-radius:6px;
     padding:16px;
-    background:#fff;
+    background:transparent;
   }
   .signal-top{
     display:flex;
@@ -212,71 +262,111 @@ function renderConsultBrief({
     margin-bottom:6px;
   }
   .signal-title{
-    font-size:16px;
-    font-weight:700;
+    font-family:var(--sans);
+    font-size:14px;
+    font-weight:500;
+    letter-spacing:-.01em;
     margin:0;
+    color:var(--ink);
   }
   .signal-detail{
     margin:0;
     color:var(--muted);
-    font-size:14px;
+    font-family:var(--serif);
+    font-size:13px;
+    line-height:1.55;
   }
   .badge{
-    font-size:11px;
+    font-family:var(--mono);
+    font-size:10px;
+    font-weight:400;
     text-transform:uppercase;
-    letter-spacing:.08em;
-    border-radius:999px;
-    padding:6px 9px;
+    letter-spacing:.20em;
+    border-radius:0;
+    padding:0;
     white-space:nowrap;
-    border:1px solid transparent;
+    border:none;
+    background:transparent;
   }
-  .badge-warning{background:var(--warn-soft); color:var(--warn); border-color:#f3d6b2}
-  .badge-positive{background:var(--good-soft); color:var(--good); border-color:#c8eed5}
-  .badge-neutral{background:var(--accent-soft); color:var(--accent); border-color:#d8d4fe}
+  .badge-warning{color:var(--accent)}
+  .badge-positive{color:var(--muted)}
+  .badge-neutral{color:var(--muted)}
   .moves{
+    list-style:none;
     margin:10px 0 0;
-    padding-left:18px;
+    padding:0;
     color:var(--muted);
-    font-size:14px;
+    font-family:var(--serif);
+    font-size:13px;
+    line-height:1.45;
+  }
+  .moves li{
+    display:grid;
+    grid-template-columns:10px minmax(0,1fr);
+    column-gap:8px;
+    align-items:baseline;
+  }
+  .moves li::before{
+    content:"\\2022";
+    color:var(--accent);
   }
   table{
     width:100%;
     border-collapse:collapse;
-    background:#fff;
-    border:1px solid var(--border);
-    border-radius:16px;
-    overflow:hidden;
+    background:transparent;
+    border:none;
+    border-radius:0;
+    overflow:visible;
+    box-shadow:none;
+    font-variant-numeric:tabular-nums;
   }
   th,td{
-    padding:12px 14px;
+    padding:10px 12px;
     text-align:left;
-    border-bottom:1px solid var(--border);
-    font-size:14px;
+    border-bottom:1px solid var(--rule-soft);
+    font-size:13px;
     vertical-align:top;
+    font-family:var(--mono);
+    color:var(--ink);
   }
   th{
-    font-size:12px;
+    font-family:var(--mono);
+    font-size:10px;
+    font-weight:400;
     text-transform:uppercase;
-    letter-spacing:.08em;
+    letter-spacing:.20em;
     color:var(--muted);
-    background:#faf7f1;
+    background:transparent;
+    border-bottom:1px solid var(--rule);
+    padding-bottom:8px;
+  }
+  td[data-label="Context"]{
+    font-family:var(--serif);
+    color:var(--muted);
+    font-size:13px;
   }
   tr:last-child td{border-bottom:none}
   .secondary-section{
     margin-top:22px;
     padding:16px 18px;
-    border:1px solid var(--border);
-    border-radius:16px;
-    background:#fbf8f2;
+    border:1px solid var(--rule);
+    border-radius:6px;
+    background:transparent;
   }
   .secondary-section h2{
     margin:0 0 6px;
-    font-size:15px;
+    font-family:var(--sans);
+    font-size:14px;
+    font-weight:500;
+    letter-spacing:-.01em;
+    color:var(--ink);
   }
   .secondary-section p{
     margin:0 0 12px;
+    font-family:var(--serif);
     font-size:13px;
     color:var(--muted);
+    line-height:1.5;
   }
   .secondary-grid{
     display:grid;
@@ -284,53 +374,62 @@ function renderConsultBrief({
     gap:10px;
   }
   .secondary-chip{
-    background:#fff;
-    border:1px solid var(--border);
-    border-radius:12px;
+    background:transparent;
+    border:1px solid var(--rule);
+    border-radius:6px;
     padding:10px 12px;
   }
   .secondary-label{
     display:block;
-    font-size:11px;
+    font-family:var(--mono);
+    font-size:10px;
+    font-weight:400;
     text-transform:uppercase;
-    letter-spacing:.08em;
+    letter-spacing:.20em;
     color:var(--muted);
-    margin-bottom:4px;
+    margin-bottom:6px;
   }
   .secondary-value{
     display:block;
+    font-family:var(--serif);
     font-size:14px;
-    font-weight:600;
+    font-weight:400;
+    line-height:1.45;
+    color:var(--ink);
   }
   .footer-note{
     margin-top:24px;
     padding-top:16px;
-    border-top:1px solid var(--border);
+    border-top:1px solid var(--rule);
     color:var(--muted);
+    font-family:var(--serif);
     font-size:12px;
+    line-height:1.5;
   }
   @media (max-width:800px){
     body{padding:16px}
-    .page{padding:22px;border-radius:18px}
+    .page{padding:22px;border-radius:6px}
     .hero,.focus-grid{grid-template-columns:1fr}
-    h1{font-size:28px}
+    .hero h1{font-size:24px}
     table,thead,tbody,th,td,tr{display:block}
     thead{display:none}
-    tr{border-bottom:1px solid var(--border)}
-    td{padding:8px 14px}
+    tr{border-bottom:1px solid var(--rule)}
+    td{padding:8px 14px;font-family:var(--mono)}
+    td[data-label="Context"]{font-family:var(--serif)}
     td::before{
       content:attr(data-label);
       display:block;
-      font-size:11px;
+      font-family:var(--mono);
+      font-size:10px;
       color:var(--muted);
       text-transform:uppercase;
-      letter-spacing:.08em;
+      letter-spacing:.20em;
       margin-bottom:2px;
     }
   }
   @media print{
     body{padding:0;background:#fff}
-    .page{box-shadow:none;border:none;max-width:none;border-radius:0;padding:18px}
+    .page{box-shadow:none;max-width:none;border-radius:0;padding:18px}
   }
 </style>
 </head>
@@ -343,9 +442,9 @@ function renderConsultBrief({
         <h1>${escapeHtml(focus.headline)}</h1>
         <p>${escapeHtml(focus.subheadline)}</p>
         <div class="meta-row">
-          <span class="chip"><strong>Window</strong> last ${days} days</span>
-          <span class="chip"><strong>Generated</strong> ${escapeHtml(dateLabel)}</span>
-          <span class="chip"><strong>Focus</strong> ${escapeHtml(focus.focusLabel)}</span>
+          <span class="chip"><strong>Window:</strong> last ${days} days</span>
+          <span class="chip"><strong>Generated:</strong> ${escapeHtml(dateLabel)}</span>
+          <span class="chip"><strong>Focus:</strong> ${escapeHtml(focus.focusLabel)}</span>
         </div>
       </div>
       <div class="hero-card">
