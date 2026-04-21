@@ -180,7 +180,7 @@ export function computeWalkStat(report) {
 
   let bestRoute = null;
   for (const r of routes) {
-    if (km >= r.km * 0.85) {
+    if (km >= r.km) {
       bestRoute = r;
       break;
     }
@@ -238,28 +238,6 @@ export function computeDerivedStat(report) {
       const totalCost = Math.round(costPerNight * daysAnalyzed / 60);
       if (totalCost > 2) {
         stats.push({ text: `Your bedtime inconsistency likely cost ~${totalCost} hours of effective sleep`, impact: totalCost });
-      }
-    }
-  }
-
-  // Steps → distance equivalent
-  if (report.activity?.available && report.activity.averages?.stepsPerDay) {
-    const totalDays = report.activity.totalDays || 30;
-    const totalSteps = report.activity.averages.stepsPerDay * totalDays;
-    const km = totalSteps * 0.000762;
-    // Find a fun city-to-city distance
-    const distances = [
-      { route: "New York → Los Angeles", km: 3944 },
-      { route: "London → Istanbul", km: 2500 },
-      { route: "Tokyo → Seoul", km: 1160 },
-      { route: "San Francisco → LA", km: 615 },
-      { route: "Paris → Amsterdam", km: 430 },
-      { route: "Boston → NYC", km: 306 },
-    ];
-    for (const d of distances) {
-      if (km >= d.km * 0.85) {
-        stats.push({ text: `You walked the equivalent of ${d.route} (${Math.round(km).toLocaleString()}km)`, impact: km / 100 });
-        break;
       }
     }
   }
