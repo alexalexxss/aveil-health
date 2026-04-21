@@ -244,15 +244,19 @@ export function computeDerivedStat(report) {
 
   // Deep sleep hours over period
   if (report.sleep?.available && report.sleep.averages?.deepMinutes > 0) {
-    const nights = report.sleep.nightsAnalyzed || 14;
+    const nights = report.sleep.nightsAnalyzed || report.activity?.totalDays || report.recovery?.daysAnalyzed || 14;
     const totalDeepHours = Math.round(report.sleep.averages.deepMinutes * nights / 60);
     const averageDeepMinutes = report.sleep.averages.deepMinutes;
     if (totalDeepHours > 10) {
       let descriptor = "a solid base to build on";
       if (averageDeepMinutes >= 75) descriptor = "a standout recovery signal";
       else if (averageDeepMinutes >= 60) descriptor = "a strong recovery pattern";
+      const totalDeepDays = Math.round(totalDeepHours / 24);
+      const totalLabel = totalDeepHours >= 168
+        ? `${totalDeepDays} days of deep sleep total`
+        : `${totalDeepHours} hours of deep sleep total`;
       stats.push({
-        text: `${totalDeepHours} hours of deep sleep total, averaging ${averageDeepMinutes} min a night, ${descriptor}`,
+        text: `${totalLabel}, averaging ${averageDeepMinutes} min a night, ${descriptor}`,
         impact: totalDeepHours / 5,
       });
     }
@@ -474,7 +478,9 @@ export function generateWrappedHTML(report, options = {}) {
     ? '0 0 52px rgba(230,184,74,0.18), 0 0 18px rgba(230,184,74,0.10)'
     : '0 0 38px rgba(217,122,43,0.10)';
   const today = new Date().toISOString().slice(0, 10);
-  const daysAnalyzed = report.activity?.totalDays || report.sleep?.nightsAnalyzed || report.recovery?.daysAnalyzed || 365;
+  const daysAnalyzed = Number.isFinite(options.days) && options.days > 0
+    ? Math.round(options.days)
+    : report.activity?.totalDays || report.sleep?.nightsAnalyzed || report.recovery?.daysAnalyzed || 365;
   const endDate = new Date();
   const startDate = new Date(endDate);
   startDate.setDate(startDate.getDate() - daysAnalyzed);
@@ -689,6 +695,7 @@ body{background:var(--bg);color:var(--ink);font-family:var(--sans);display:flex;
 export function generateDemoCards(outDir) {
   const { mkdirSync, writeFileSync } = await_fs();
   mkdirSync(outDir, { recursive: true });
+  const periodDays = 365;
 
   const demos = [
     { name: "longevity-champion", score: 94, sleep: { dur: 480, deep: 85, rem: 100, btHour: 21.3, btVar: 0.2 }, hrv: 120, rhr: 45, steps: 14500, kcal: 900 },
@@ -713,7 +720,7 @@ export function generateDemoCards(outDir) {
       overall: { score: d.score },
       sleep: {
         available: true,
-        nightsAnalyzed: 30,
+        nightsAnalyzed: periodDays,
         averages: {
           durationMinutes: d.sleep.dur,
           deepMinutes: d.sleep.deep,
@@ -726,8 +733,8 @@ export function generateDemoCards(outDir) {
       },
       activity: {
         available: true,
-        totalDays: 365,
-        daysAnalyzed: 365,
+        totalDays: periodDays,
+        daysAnalyzed: periodDays,
         averages: {
           stepsPerDay: d.steps,
           activeEnergyPerDay: d.kcal,
@@ -735,7 +742,7 @@ export function generateDemoCards(outDir) {
       },
       recovery: {
         available: true,
-        daysAnalyzed: 30,
+        daysAnalyzed: periodDays,
         latestHRV: d.hrv + 5,
         averageHRV: d.hrv,
         averageRHR: d.rhr,
@@ -747,7 +754,7 @@ export function generateDemoCards(outDir) {
       signals: [],
     };
 
-    const { html, filename } = generateWrappedHTML(report);
+    const { html, filename } = generateWrappedHTML(report, { days: periodDays });
     const outFile = `${outDir}/wrapped-${d.name}.html`;
     writeFileSync(outFile, html);
     files.push(`wrapped-${d.name}.html`);
