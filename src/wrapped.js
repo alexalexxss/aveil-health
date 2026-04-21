@@ -503,6 +503,7 @@ export function generateWrappedHTML(report, options = {}) {
   const periodStart = startDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
   const periodEnd = endDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
   const periodLabel = periodStart === periodEnd ? periodStart : `${periodStart} – ${periodEnd}`;
+  const subtitleClass = periodLabel.length > 16 ? 'subtitle subtitle-compact' : 'subtitle';
   const scoreDegrees = pct * 3.6;
 
   const gridItems = [];
@@ -611,6 +612,7 @@ body{background:var(--bg);color:var(--ink);font-family:var(--sans);display:flex;
 .header{text-align:center;margin-bottom:30px}
 .logo{font-family:var(--mono);font-weight:400;font-size:11px;letter-spacing:.20em;color:var(--amber);margin-bottom:10px;text-transform:uppercase}
 .subtitle{font-family:var(--sans);font-weight:400;font-size:28px;line-height:1.08;letter-spacing:-.02em;color:var(--ink);max-width:320px;margin:0 auto}
+.subtitle-compact{font-size:23px;max-width:420px;letter-spacing:-.015em}
 .score-section{text-align:center;margin-bottom:28px}
 .score-ring{width:136px;height:136px;border-radius:50%;background:conic-gradient(${color} ${scoreDegrees}deg,rgba(242,236,224,0.08) ${scoreDegrees}deg);display:inline-flex;align-items:center;justify-content:center;position:relative;box-shadow:${ringGlow}}
 .score-inner{width:124px;height:124px;border-radius:50%;background:var(--bg-2);display:flex;flex-direction:column;align-items:center;justify-content:center}
@@ -659,6 +661,7 @@ body{background:var(--bg);color:var(--ink);font-family:var(--sans);display:flex;
   .card{padding:30px 20px;border-radius:4px}
   .grid{grid-template-columns:1fr}
   .subtitle{font-size:24px;max-width:248px}
+  .subtitle-compact{font-size:20px;max-width:280px}
   .identity-title{font-size:20px}
 }
 </style>
@@ -667,7 +670,7 @@ body{background:var(--bg);color:var(--ink);font-family:var(--sans);display:flex;
 <div class="card">
   <div class="header">
     <div class="logo">AVEIL WRAPPED</div>
-    <div class="subtitle">${escapeHtml(periodLabel)}</div>
+    <div class="${subtitleClass}">${escapeHtml(periodLabel)}</div>
   </div>
 
   <div class="score-section">

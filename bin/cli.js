@@ -12,7 +12,7 @@ import { execSync } from "node:child_process";
 import { parseHealthExport } from "../src/parser.js";
 import { analyze } from "../src/analyze.js";
 import { formatReport } from "../src/format.js";
-import { generateWrappedHTML } from "../src/wrapped.js";
+import { generateDemoCards, generateWrappedHTML } from "../src/wrapped.js";
 import {
   generateHealthConsultBriefHTML,
   generateSleepConsultBriefHTML,
@@ -26,19 +26,22 @@ function printUsage() {
 
   Usage:
     aveil-health analyze <export.xml|export.zip> [--days N] [--json]
-    aveil-health wrapped <export.xml|export.zip> [--output file.html] [--open]
+    aveil-health wrapped <export.xml|export.zip> [--days N] [--output file.html] [--open]
     aveil-health brief <export.xml|export.zip> [--output file.html] [--open]
     aveil-health sleep-brief <export.xml|export.zip> [--output file.html] [--open]
+    aveil-health demo [--output dir] [--open]
 
   Examples:
     npx aveil-health analyze export.xml
     npx aveil-health analyze export.zip --days 14
     npx aveil-health analyze export.xml --json > report.json
     npx aveil-health wrapped export.zip
+    npx aveil-health wrapped export.zip --days 365
     npx aveil-health wrapped export.zip --output wrapped-card.html
     npx aveil-health brief export.zip
     npx aveil-health brief export.zip --output health-consult-brief.html
     npx aveil-health sleep-brief export.zip --output sleep-recovery-brief.html
+    npx aveil-health demo --output ./demo-cards
   `);
 }
 
@@ -49,7 +52,7 @@ if (args.length === 0 || args.includes("--help") || args.includes("-h")) {
 
 const command = args[0];
 const input = args[1];
-if (!input) {
+if (command !== "demo" && !input) {
   console.error("Missing input file.");
   printUsage();
   process.exit(1);
@@ -118,6 +121,19 @@ try {
     console.log(`\n✨ Brief saved to ${targetPath}`);
     if (shouldOpen) {
       openFile(targetPath);
+    }
+  } else if (command === "demo") {
+    console.log(`\n🎴 Generating demo Wrapped cards...`);
+    const targetDir = outputPath ? path.resolve(outputPath) : path.join(process.cwd(), "aveil-demo");
+    const files = generateDemoCards(targetDir);
+
+    console.log(`\n✨ Demo cards saved to ${targetDir}`);
+    for (const file of files) {
+      console.log(`   • ${file}`);
+    }
+
+    if (shouldOpen && files.length > 0) {
+      openFile(path.join(targetDir, files[0]));
     }
   } else {
     console.error(`Unknown command: ${command}`);
