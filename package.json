@@ -1,7 +1,7 @@
 {
   "name": "aveil-health",
-  "version": "0.3.0",
-  "description": "Private, local Apple Health analysis \u2014 CLI + MCP server",
+  "version": "0.4.0",
+  "description": "Private, local Apple Health analysis: Wrapped card, health brief, CLI, and MCP server",
   "type": "module",
   "bin": {
     "aveil-health": "bin/cli.js"

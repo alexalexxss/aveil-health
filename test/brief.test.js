@@ -25,6 +25,11 @@ test("short sleep leads the brief even when steps are also light", async () => {
   assert.equal(model.question, "Which input is shaping your sleep the most right now?");
 });
 
+test("when sleep and steps both fall short, sleep comes first", () => {
+  const model = buildBriefModel(buildPeriodSummary(steadyData({ sleepMinutes: 360, steps: 3500 }), { days: 30 }));
+  assert.equal(model.focus, "sleep");
+});
+
 test("light movement leads when sleep is fine", () => {
   const model = buildBriefModel(buildPeriodSummary(steadyData({ steps: 3800 }), { days: 30 }));
   assert.equal(model.focus, "activity");

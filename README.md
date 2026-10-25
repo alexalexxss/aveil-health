@@ -1,155 +1,88 @@
 # aveil-health
 
-Your Apple Health data, analyzed locally via CLI.
+Your Apple Health data, read on your own computer: a shareable Wrapped card, a health brief for your next appointment, and a plain report.
 
-One command to turn your data into a clear report — sleep stages, recovery readiness, activity trends, and nutrition signals (if you track food). Everything runs on your machine. Nothing leaves it.
-
-## Health Wrapped
-
-Generate a shareable card (think Spotify Wrapped, but for your health):
+This is the early open-source tool that the Aveil app grew from. Get Aveil on the [App Store](https://apps.apple.com/us/app/aveil-health/id6761336522) or [Google Play](https://play.google.com/store/apps/details?id=com.aveil.app).
 
 ```bash
 npx aveil-health wrapped export.zip
 ```
 
-Opens a dark-mode card in your browser with your score, health identity, stats, and signals.
+Everything runs on your machine. Your export is never uploaded.
 
-<p align="center">
-  <img src="assets/wrapped-demo.png" width="360" alt="Health Wrapped card example — The Optimizer" />
-</p>
+## Aveil Wrapped
 
-## Health consult brief
-
-Generate an anomaly-first health consult brief from the strongest signals in your Apple Health data:
+A recap card in the Aveil app's design: your standout for the period, a simple score, and the facts behind it.
 
 ```bash
-npx aveil-health brief export.zip --output examples/output/appointment-brief.html
-```
-
-The brief leads with four concrete questions above the fold:
-- what changed
-- why it matters
-- what to ask
-- what to test next
-
-It is intentionally not a generic wellness report. The artifact is designed to help a consult start with the strongest issue instead of a score.
-
-Canonical example output in this repo:
-- `examples/output/appointment-brief.html`
-- `assets/appointment-brief-showcase.png`
-
-For a narrower sleep-first version, use the dedicated sleep brief mode:
-
-```bash
-npx aveil-health sleep-brief export.zip --output ~/Desktop/sleep-recovery-brief.html
+npx aveil-health wrapped export.zip                  # last 30 days
+npx aveil-health wrapped export.zip --period week
+npx aveil-health wrapped export.zip --period year
 ```
 
 <p align="center">
-  <img src="assets/appointment-brief-showcase.png" width="360" alt="Aveil health consult brief showcase" />
+  <img src="assets/wrapped.png" width="760" alt="Aveil Wrapped card made from synthetic sample data: All-Rounder, score 90, with steps, deep sleep, recovery, and strength sessions" />
 </p>
 
-## Get Started
+## Health brief
+
+A calm, printable one-page summary to bring to a doctor or coach. It names the clearest area to look at, the question worth asking, your averages next to your last 7 days, and what to bring up.
+
+```bash
+npx aveil-health brief export.zip
+npx aveil-health brief export.zip --output ~/Desktop/health-brief.html
+npx aveil-health sleep-brief export.zip              # sleep and recovery only
+```
+
+<p align="center">
+  <img src="assets/health-brief.png" width="620" alt="Aveil Health Brief made from synthetic sample data" />
+</p>
+
+The brief is a summary of self-tracked data, not a diagnosis.
+
+Both images above come from `npx aveil-health demo`, which makes every output from a synthetic export. No real person's data is in this repo.
+
+## Get started
 
 ### 1. Export your Apple Health data
 
 On your iPhone:
 
-1. Open the **Health** app
-2. Tap your **profile picture** (top right)
-3. Scroll down → **Export All Health Data**
-4. Tap **Export** (this takes a minute — it's zipping everything)
-5. AirDrop or save the `.zip` to your computer
+1. Open the **Health** app.
+2. Tap your **profile picture** (top right).
+3. Tap **Export All Health Data**, then **Export**. It takes a minute.
+4. AirDrop or save the `.zip` to your computer.
 
-> The file can be 50–500MB+ depending on how long you've had an Apple Watch. That's fine — the parser streams through it without loading everything into memory.
+The file can be hundreds of megabytes. That's fine: the tool reads it in a stream and never loads it all into memory. Use the `.zip` as it is, or the `export.xml` inside it.
 
 ### 2. Run it
 
 ```bash
-# Full analysis
-npx aveil-health analyze export.zip
-
-# Just the last 2 weeks
-npx aveil-health analyze export.xml --days 14
-
-# JSON output (pipe to jq, save, feed to other tools)
-npx aveil-health analyze export.xml --json > report.json
-
-# Health consult brief
-npx aveil-health brief export.zip
-
-# Save the consult brief to a custom path
-npx aveil-health brief export.zip --output ~/Desktop/health-consult-brief.html
-
-# Narrow sleep & recovery brief
-npx aveil-health sleep-brief export.zip --output ~/Desktop/sleep-recovery-brief.html
-
-# Wrapped card
-npx aveil-health wrapped export.zip
-
-# Generate demo cards for all archetypes
-npx aveil-health demo
+npx aveil-health wrapped export.zip                  # Wrapped card
+npx aveil-health brief export.zip                    # health brief
+npx aveil-health analyze export.zip                  # report in the terminal
+npx aveil-health analyze export.zip --days 14 --json > report.json
+npx aveil-health demo                                # try it without your own data
 ```
 
-That's it. No install, no config, no signup.
+No install, no account, no config. Add `--open` to open the card or brief in your browser.
 
-## What you get
+## How the numbers work
 
-```
-  ▲ AVEIL  Health Analysis
-  ─────────────────────────────────────
+Everything is a simple, standard measure, so you can check it yourself:
 
-  Overall Score: 86/100
-  sleep 99 · recovery 74 · activity 100
+- **Averages** over the period you choose (default: the last 30 complete days before your export).
+- **Latest vs baseline** in the brief: your last 7 days next to the period average. Arrows show a change of more than 3%.
+- **This period vs the one before** on the Wrapped card, shown only when the change is big enough to matter (for example 10 minutes of deep sleep or 1,000 steps a day).
+- **Sleep stages** from your watch, one main sleep per night. Naps are left out.
+- **Common reference marks**, such as 7 to 9 hours of sleep, 60 minutes of deep sleep, and 7,000 steps a day. There are no rankings against other people.
+- **The score** is the plain average of three parts: sleep (4 to 8 hours), steps (0 to 10,000 a day), and resting heart rate (80 down to 50 bpm).
 
-  ■ SLEEP
-  Last night: 7.2h total
-  Deep 87m · REM 111m · Core 231m · Awake 31m
+When a watch and a phone both count the same steps, only one is kept.
 
-  14-night avg: 7.5h · deep 52m · REM 96m
-  Avg bedtime: 9:00 PM · variability ±24min
-  Trend: 📈 improving
+## MCP server
 
-  ■ RECOVERY
-  Score: 74/100 (good)
-  HRV: 120ms (avg 109.5ms) · RHR 49bpm
-  Trend: 📈 improving
-
-  ■ ACTIVITY
-  Today: 11,045 steps · 634 kcal
-  14-day avg: 13,648 steps/day · 738 kcal/day
-  Recent workouts: Strength Training (34min), Walking (28min)
-  Trend: 📉 declining
-
-  ■ NUTRITION
-  14-day avg: 1,676 kcal · 133g protein
-
-  ■ SIGNALS
-  ✅ Sleep: 7.2h (good)
-     → Sleep looks solid — maintain current routine
-
-  ✅ Recovery: 74/100 (good)
-     → Good to push — recovery supports hard training today
-
-  ─────────────────────────────────────
-  77,186 records analyzed
-  aveilx.com
-```
-
-## Signals
-
-Signals are the point — not dashboards, but concrete observations with next steps:
-
-- **Sleep quality** — duration + stage breakdown + what to change
-- **Deep sleep deficit** — when your deep sleep average drops below 45 min
-- **Recovery readiness** — HRV-based, tells you to push or rest
-- **Activity alerts** — when daily movement drops below health thresholds
-- **Protein lag** — when tracked protein falls short
-
-Each signal has a severity (`positive` / `neutral` / `warning`) and a specific action.
-
-## MCP Server
-
-Give your AI agent a health context. Add to your MCP config (Claude Code, OpenClaw, Codex, etc.):
+Give your AI assistant a local view of your health data. Add this to your MCP config (Claude Code, Cursor, Codex, and others):
 
 ```json
 {
@@ -158,42 +91,37 @@ Give your AI agent a health context. Add to your MCP config (Claude Code, OpenCl
       "command": "npx",
       "args": ["aveil-health", "mcp"],
       "env": {
-        "AVEIL_HEALTH_EXPORT": "/path/to/your/export.xml"
+        "AVEIL_HEALTH_EXPORT": "/path/to/your/export.zip"
       }
     }
   }
 }
 ```
 
-Then just ask:
+Then ask things like *"How did I sleep last night?"* or *"How is my recovery trending?"*
 
-- *"How did I sleep last night?"*
-- *"Am I recovered enough to train hard today?"*
-- *"What should I focus on to improve my sleep?"*
-
-Available tools: `analyze_health`, `get_sleep_summary`, `get_recovery_status`, `get_activity_summary`, `get_signals`, `get_recommendations`
-
-Works with Claude Code, Cursor, Codex, OpenClaw, Windsurf, Cline — anything that speaks MCP.
+Tools: `analyze_health`, `get_sleep_summary`, `get_recovery_status`, `get_activity_summary`, `get_signals`, `get_recommendations`.
 
 ## Privacy
 
-- **100% local** — parsed and analyzed on your machine
-- **Zero network calls** — no APIs, no telemetry, no tracking
-- **No account** — just your export file
-- **Open source** — verify every line, fork it, make it yours
+- **Local:** your export is read and analyzed on your computer.
+- **Never uploaded:** no account, no analytics, no server. The only network request is for two web fonts when you open a card or brief, and it carries none of your data.
+- **Open source:** read every line, fork it, make it yours.
+
+## Use it as a library
+
+```js
+import { parseHealthExport, buildPeriodSummary, generateWrappedHTML } from "aveil-health";
+
+const data = await parseHealthExport("export.zip", { days: 62 });
+const summary = buildPeriodSummary(data, { days: 30 });
+const { html } = generateWrappedHTML(summary);
+```
 
 ## Requirements
 
-- Node.js 18+
-- Apple Health export (iPhone for export, Apple Watch recommended for full data)
-
-## Roadmap
-
-- [ ] Aveil app integration
-- [ ] Trend visualizations (terminal sparklines)
-- [ ] Weekly digest mode
-- [ ] Custom signal thresholds
-- [ ] Garmin / Fitbit / Google Health support
+- Node.js 18 or later
+- An Apple Health export (an Apple Watch adds sleep stages, HRV, and resting heart rate)
 
 ## License
 

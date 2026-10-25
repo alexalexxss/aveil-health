@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawn } from "node:child_process";
 import { mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -53,4 +53,40 @@ test("demo writes every output from synthetic data", () => {
 
 test("a bad --period is a clear error", () => {
   assert.throws(() => run(["wrapped", "export.zip", "--period", "decade"]), /--period must be week, month, or year/);
+});
+
+test("mcp starts the MCP server and answers over stdio", async () => {
+  const dir = mkdtempSync(path.join(tmpdir(), "aveil-health-mcp-"));
+  try {
+    const zipPath = path.join(dir, "export.zip");
+    writeFileSync(zipPath, makeZip([{ name: "apple_health_export/export.xml", data: buildSampleExportXml({ days: 40 }) }]));
+    const child = spawn(process.execPath, [CLI, "mcp"], { env: { ...process.env, AVEIL_HEALTH_EXPORT: zipPath } });
+    const replies = [];
+    let buffer = "";
+    const done = new Promise((resolve, reject) => {
+      child.stdout.on("data", (chunk) => {
+        buffer += chunk;
+        let index;
+        while ((index = buffer.indexOf("\n")) !== -1) {
+          replies.push(JSON.parse(buffer.slice(0, index)));
+          buffer = buffer.slice(index + 1);
+          if (replies.length === 3) resolve();
+        }
+      });
+      child.on("error", reject);
+      setTimeout(() => reject(new Error("MCP server did not answer")), 20000);
+    });
+    const send = (message) => child.stdin.write(`${JSON.stringify({ jsonrpc: "2.0", ...message })}\n`);
+    send({ id: 1, method: "initialize", params: {} });
+    send({ id: 2, method: "tools/list" });
+    send({ id: 3, method: "tools/call", params: { name: "get_sleep_summary", arguments: { days: 14 } } });
+    await done;
+    child.stdin.end();
+    const byId = Object.fromEntries(replies.map((reply) => [reply.id, reply]));
+    assert.equal(byId[1].result.serverInfo.name, "aveil-health");
+    assert.ok(byId[2].result.tools.some((tool) => tool.name === "get_sleep_summary"));
+    assert.match(byId[3].result.content[0].text, /Sleep/);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 });

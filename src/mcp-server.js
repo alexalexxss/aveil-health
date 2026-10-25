@@ -26,6 +26,9 @@ import { parseHealthExport } from "./parser.js";
 import { analyze } from "./analyze.js";
 import { createInterface } from "node:readline";
 import { existsSync } from "node:fs";
+import { createRequire } from "node:module";
+
+const packageJson = createRequire(import.meta.url)("../package.json");
 
 // ─── MCP Protocol Constants ───
 
@@ -34,7 +37,7 @@ const MCP_PROTOCOL_VERSION = "2024-11-05";
 
 const SERVER_INFO = {
   name: "aveil-health",
-  version: "0.2.0",
+  version: packageJson.version,
 };
 
 const SERVER_CAPABILITIES = {

@@ -32,6 +32,7 @@ function printUsage() {
     aveil-health sleep-brief <export.zip|export.xml> [--period week|month|year] [--output file.html] [--open]
     aveil-health analyze <export.zip|export.xml> [--days N] [--json]
     aveil-health demo [--output dir] [--open]
+    aveil-health mcp                 Start the MCP server (reads AVEIL_HEALTH_EXPORT)
 
   --days N works everywhere in place of --period (default: 30 days).
 
@@ -42,19 +43,6 @@ function printUsage() {
     npx aveil-health analyze export.zip --days 14 --json > report.json
     npx aveil-health demo --output ./aveil-demo
   `);
-}
-
-if (args.length === 0 || args.includes("--help") || args.includes("-h")) {
-  printUsage();
-  process.exit(0);
-}
-
-const command = args[0];
-const input = args[1] && !args[1].startsWith("--") ? args[1] : null;
-if (command !== "demo" && !input) {
-  console.error("Missing input file.");
-  printUsage();
-  process.exit(1);
 }
 
 function optionValue(name) {
@@ -75,10 +63,6 @@ function resolveDays() {
   return days;
 }
 
-const asJson = args.includes("--json");
-const outputPath = optionValue("--output") ?? null;
-const shouldOpen = args.includes("--open");
-
 function resolveOutputPath(requestedPath, fallbackFilename) {
   return requestedPath
     ? path.resolve(requestedPath)
@@ -91,35 +75,76 @@ function writeOutput(targetPath, html) {
 }
 
 function openFile(filePath) {
-  const opener = process.platform === "darwin" ? ["open", [filePath]]
+  const [program, programArgs] = process.platform === "darwin" ? ["open", [filePath]]
     : process.platform === "win32" ? ["cmd", ["/c", "start", "", filePath]]
       : ["xdg-open", [filePath]];
   try {
-    execFileSync(opener[0], opener[1], { stdio: "ignore" });
+    execFileSync(program, programArgs, { stdio: "ignore" });
   } catch (error) {
     console.warn(`Could not open ${filePath}: ${error.message}`);
   }
 }
 
-// Cards compare this period with the one before it, so read twice the
+// The cards compare this period with the one before it, so read twice the
 // window plus the unfinished export day.
 async function loadSummary(file, days) {
   const data = await parseHealthExport(file, { days: days * 2 + 2, heartRate: false });
   return buildPeriodSummary(data, { days });
 }
 
-try {
+async function generateDemo(targetDir) {
+  fs.mkdirSync(targetDir, { recursive: true });
+  const outputs = [
+    { file: "aveil-wrapped.html", profile: "steady", days: 30, make: generateWrappedHTML },
+    { file: "aveil-wrapped-year.html", profile: "steady", days: 365, make: generateWrappedHTML },
+    { file: "aveil-wrapped-mover.html", profile: "mover", days: 30, make: generateWrappedHTML },
+    { file: "aveil-health-brief.html", profile: "steady", days: 30, make: generateHealthConsultBriefHTML },
+    { file: "aveil-health-brief-short-sleep.html", profile: "short_sleep", days: 30, make: generateHealthConsultBriefHTML },
+    { file: "aveil-sleep-brief.html", profile: "steady", days: 30, make: generateSleepConsultBriefHTML },
+  ];
+  const summaries = new Map();
+  for (const output of outputs) {
+    const key = `${output.profile}:${output.days}`;
+    if (!summaries.has(key)) {
+      const xml = buildSampleExportXml({ profile: output.profile, days: output.days * 2 + 10 });
+      const data = await parseHealthExportXml(xml, { days: output.days * 2 + 2, heartRate: false });
+      summaries.set(key, buildPeriodSummary(data, { days: output.days }));
+    }
+    const { html } = output.make(summaries.get(key), { generatedAt: new Date() });
+    fs.writeFileSync(path.join(targetDir, output.file), html, "utf8");
+  }
+  return outputs.map((output) => output.file);
+}
+
+async function main() {
+  if (args.length === 0 || args.includes("--help") || args.includes("-h")) {
+    printUsage();
+    return;
+  }
+
+  const command = args[0];
+  if (command === "mcp") {
+    const { startMcpServer } = await import("../src/mcp-server.js");
+    await startMcpServer();
+    return;
+  }
+
+  const input = args[1] && !args[1].startsWith("--") ? args[1] : null;
+  if (command !== "demo" && !input) {
+    console.error("Missing input file.");
+    printUsage();
+    process.exitCode = 1;
+    return;
+  }
+  const outputPath = optionValue("--output") ?? null;
+  const shouldOpen = args.includes("--open");
+
   if (command === "analyze") {
     const days = resolveDays();
     console.error(`\n🔍 Analyzing Apple Health export (${days} days)...`);
     const data = await parseHealthExport(input, { days });
     const report = analyze(data);
-
-    if (asJson) {
-      process.stdout.write(JSON.stringify(report, null, 2) + "\n");
-    } else {
-      process.stdout.write(formatReport(report));
-    }
+    process.stdout.write(args.includes("--json") ? JSON.stringify(report, null, 2) + "\n" : formatReport(report));
   } else if (command === "wrapped") {
     const days = resolveDays();
     console.log(`\n🎴 Making your Aveil Wrapped card (last ${days} days)...`);
@@ -141,7 +166,7 @@ try {
     console.log(`\n✨ Brief saved to ${targetPath}`);
     if (shouldOpen) openFile(targetPath);
   } else if (command === "demo") {
-    console.log(`\n🎴 Making demo outputs from a synthetic Apple Health export (no real data)...`);
+    console.log("\n🎴 Making demo outputs from a synthetic Apple Health export (no real data)...");
     const targetDir = outputPath ? path.resolve(outputPath) : path.join(process.cwd(), "aveil-demo");
     const files = await generateDemo(targetDir);
     console.log(`\n✨ Demo files saved to ${targetDir}`);
@@ -152,33 +177,13 @@ try {
   } else {
     console.error(`Unknown command: ${command}`);
     printUsage();
-    process.exit(1);
+    process.exitCode = 1;
   }
+}
+
+try {
+  await main();
 } catch (error) {
   console.error(`\n❌ ${error.message}`);
   process.exit(1);
-}
-
-async function generateDemo(targetDir) {
-  fs.mkdirSync(targetDir, { recursive: true });
-  const outputs = [
-    { file: "aveil-wrapped.html", profile: "steady", days: 30, make: generateWrappedHTML },
-    { file: "aveil-wrapped-year.html", profile: "steady", days: 365, make: generateWrappedHTML },
-    { file: "aveil-wrapped-mover.html", profile: "mover", days: 30, make: generateWrappedHTML },
-    { file: "aveil-health-brief.html", profile: "steady", days: 30, make: generateHealthConsultBriefHTML },
-    { file: "aveil-health-brief-short-sleep.html", profile: "short_sleep", days: 30, make: generateHealthConsultBriefHTML },
-    { file: "aveil-sleep-brief.html", profile: "steady", days: 30, make: generateSleepConsultBriefHTML },
-  ];
-  const cache = new Map();
-  for (const output of outputs) {
-    const key = `${output.profile}:${output.days}`;
-    if (!cache.has(key)) {
-      const xml = buildSampleExportXml({ profile: output.profile, days: output.days * 2 + 10 });
-      const data = await parseHealthExportXml(xml, { days: output.days * 2 + 2, heartRate: false });
-      cache.set(key, buildPeriodSummary(data, { days: output.days }));
-    }
-    const { html } = output.make(cache.get(key), { generatedAt: new Date() });
-    fs.writeFileSync(path.join(targetDir, output.file), html, "utf8");
-  }
-  return outputs.map((output) => output.file);
 }
