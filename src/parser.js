@@ -101,8 +101,15 @@ function openZipExportEntry(zipPath) {
             return;
           }
           settled = true;
-          stream.once("end", () => zip.close());
-          stream.once("error", () => zip.close());
+          let closed = false;
+          const closeZip = () => {
+            if (closed) return;
+            closed = true;
+            zip.close();
+          };
+          stream.once("end", closeZip);
+          stream.once("close", closeZip);
+          stream.once("error", closeZip);
           resolve(stream);
         });
       };
@@ -251,19 +258,24 @@ export async function parseHealthExportStream(stream, opts = {}) {
 
   const decoder = new StringDecoder("utf8");
   let checkedStart = false;
-  for await (const chunk of stream) {
-    const text = typeof chunk === "string" ? chunk : decoder.write(chunk);
-    if (!checkedStart && text.trim()) {
-      checkedStart = true;
-      if (!text.trimStart().startsWith("<")) {
-        if (typeof stream.destroy === "function") stream.destroy();
-        throw new Error("This file is not an Apple Health export. Use the export.zip from the Health app, or the export.xml inside it.");
+  try {
+    for await (const chunk of stream) {
+      const text = typeof chunk === "string" ? chunk : decoder.write(chunk);
+      if (!checkedStart && text.trim()) {
+        checkedStart = true;
+        if (!text.trimStart().startsWith("<")) {
+          throw new Error("This file is not an Apple Health export. Use the export.zip from the Health app, or the export.xml inside it.");
+        }
       }
+      parser.write(text);
     }
-    parser.write(text);
+    parser.write(decoder.end());
+    parser.close();
+  } finally {
+    // Leaving the loop early (an error above, or a parser failure) must still
+    // release the file and the zip archive.
+    if (typeof stream.destroy === "function" && !stream.destroyed) stream.destroy();
   }
-  parser.write(decoder.end());
-  parser.close();
 
   if (!sawElement) {
     throw new Error("This file is empty or not an Apple Health export.");

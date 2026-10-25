@@ -83,3 +83,18 @@ test("can skip raw heart-rate samples", async () => {
   assert.equal(data.heartRate.length, 0);
   assert.equal(data.steps.length, 2);
 });
+
+test("rejected zip reads do not leave files open", async () => {
+  const fdDir = process.platform === "linux" ? "/proc/self/fd" : "/dev/fd";
+  const { readdirSync } = await import("node:fs");
+  await withTempDir(async (dir) => {
+    const zipPath = path.join(dir, "export.zip");
+    writeFileSync(zipPath, makeZip([{ name: "apple_health_export/export.xml", data: "not xml at all" }]));
+    const before = readdirSync(fdDir).length;
+    for (let attempt = 0; attempt < 25; attempt += 1) {
+      await assert.rejects(parseHealthExport(zipPath), /not an Apple Health export/);
+    }
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    assert.ok(readdirSync(fdDir).length <= before + 2, "file descriptors leaked");
+  });
+});

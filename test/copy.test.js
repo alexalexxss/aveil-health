@@ -25,7 +25,8 @@ const BANNED = [
   /at the end of the day/i, /gentle reminder/i, /studies (suggest|show)/i, /research shows/i,
   /meta-analysis/i, /\bwill (improve|fix)\b/i, /guarantee/i, /diagnos(e|is)\b(?! one)/i,
   /\bdisease/i, /\brisk\b/i, /mortality/i, /\bpoor\b/i, /needs attention/i, /\blever\b/i,
-  /\btonight\b/i, /\bthis morning\b/i, /\btomorrow\b/i, /\btop \d/i, /percentile/i,
+  /\btonight\b/i, /\bthis morning\b/i, /\btomorrow\b/i, /\bnext morning\b/i, /\bright now\b/i,
+  /\btop \d/i, /percentile/i, /\bhealthy\b/i, /athlete/i,
 ];
 
 test("no em dashes, double hyphens, or emoji in any line", () => {

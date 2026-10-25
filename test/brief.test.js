@@ -22,7 +22,7 @@ test("short sleep leads the brief even when steps are also light", async () => {
   const model = buildBriefModel(await sampleSummary("short_sleep"));
   assert.equal(model.focus, "sleep");
   assert.equal(model.headline, "Sleep is the clearest place to look this month.");
-  assert.equal(model.question, "Which input is shaping your sleep the most right now?");
+  assert.equal(model.question, "Which input is shaping your sleep the most?");
 });
 
 test("when sleep and steps both fall short, sleep comes first", () => {

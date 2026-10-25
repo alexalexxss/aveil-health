@@ -31,7 +31,7 @@ export const HERO = {
   recovery_hrv: "Recovery was your standout, averaging a strong {value} this {period}.",
   recovery_rhr: "Resting heart rate was your standout, averaging a strong {value} this {period}.",
   activity: "Daily movement was your standout, averaging a strong {value} a day this {period}.",
-  regularity: "Your bedtime barely drifts, holding within {value} night to night.",
+  regularity: "Your bedtime barely drifts, typically landing within about {value} of your usual time.",
   all_rounder: "{value} all cleared a strong mark this {period}.",
   on_the_rise: "This {period} edged ahead of your last.",
   first_read: "This {period} has enough data for a first read.",
@@ -57,6 +57,8 @@ export const WRAPPED = {
   eyebrow: "Aveil Wrapped",
   deeperCut: "The deeper cut",
   biggestMove: "Your biggest move vs last {period}",
+  bandTitle: "Top ~{value}% recovery",
+  bandDetail: "among people your age",
   levelsHeading: "Where you held strong this {period}",
   factsHeading: "Good to know",
   versusLast: "vs last {period}",
@@ -123,17 +125,17 @@ export const BRIEF_HEADLINES = {
 };
 
 export const MAIN_QUESTIONS = {
-  sleep: "Which input is shaping your sleep the most right now?",
-  recovery: "Which input is limiting your recovery the most right now?",
-  activity: "Which input is shaping your movement the most right now?",
-  nutrition: "Which eating pattern is shaping how you feel right now?",
+  sleep: "Which input is shaping your sleep the most?",
+  recovery: "Which input is limiting your recovery the most?",
+  activity: "Which input is shaping your movement the most?",
+  nutrition: "Which eating pattern is shaping how you feel?",
 };
 
 export const EXPERIMENTS = {
-  sleep: "Go to bed at the same time every night this {period} and see how your sleep responds.",
-  recovery: "Do the same short wind-down before bed each night this {period} and see how the next day feels.",
+  sleep: "Keep the same bedtime every day this {period} and see how your sleep responds.",
+  recovery: "Do the same short wind-down before every sleep this {period} and see how you feel after waking.",
   activity: "Keep your daily movement steady this {period} and see how your recovery responds.",
-  nutrition: "Finish your last meal at the same time each night this {period} and see how the next morning feels.",
+  nutrition: "Keep the same gap between your last meal and bed every day this {period} and see how you feel after waking.",
   year_sleep: "Sleep looks like the area to focus on next. Worth tracking as the months go.",
   year_recovery: "Recovery looks like the area to focus on next over the months ahead.",
   year_activity: "Movement looks like the area to focus on next over the months ahead.",
@@ -172,21 +174,21 @@ export const CONTEXT_PROBES = {
 // Data-anchored lines for "Strongest patterns". Each names its own measure.
 export const PATTERNS = {
   deep_sleep_strong: "Your deep sleep averaged a strong {value} a night, clearing the {threshold} recovery mark.",
-  deep_sleep_solid: "Your deep sleep averaged a healthy {value} a night this {period}.",
+  deep_sleep_solid: "Your deep sleep averaged {value} a night this {period}.",
   deep_sleep_opportunity: "Your deep sleep averaged around {value}, and a steadier wind-down tends to add to it.",
   sleep_duration_strong: "Your sleep averaged {value} a night, inside the 7 to 9 hour range.",
   sleep_duration_short: "Your sleep averaged {value} a night, and an earlier, steady bedtime tends to add to it.",
   sleep_duration_plain: "Your sleep averaged {value} a night this {period}.",
-  timing_steady: "Your bedtime barely drifts, holding within {value} night to night.",
-  timing_opportunity: "Your bedtime swings about {value} night to night, so a tighter window could help your body clock.",
+  timing_steady: "Your bedtime barely drifts, typically landing within about {value} of your usual time.",
+  timing_opportunity: "Your bedtime typically moves about {value} from your usual time, so a tighter window could help your body clock.",
   hrv_strong: "Your recovery (HRV) averaged a strong {value} this {period}.",
   hrv_present: "Your recovery (HRV) averaged around {value}, steady enough to track real changes.",
-  rhr_athlete: "Your resting heart rate averaged {value}, inside the athlete range.",
-  rhr_steady: "Your resting heart rate averaged a steady {value} this {period}.",
+  rhr_under_mark: "Your resting heart rate averaged {value}, under the {threshold} mark.",
+  rhr_plain: "Your resting heart rate averaged {value} this {period}.",
   steps_strong: "Your daily steps averaged {value}, clearing the {threshold} strong movement mark.",
-  steps_solid: "Your daily steps averaged a healthy {value} this {period}.",
+  steps_solid: "Your daily steps averaged {value} this {period}.",
   steps_opportunity: "Your daily steps averaged around {value}, and a short daily walk adds up fast.",
-  protein_strong: "Your protein averaged a healthy {value} a day, past the {threshold} floor.",
+  protein_strong: "Your protein averaged {value} a day, past the {threshold} mark.",
   protein_opportunity: "Your protein averaged around {value} a day, and a little more tends to help recovery.",
 };
 

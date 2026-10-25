@@ -45,9 +45,9 @@ export function addNight(data, day, { bedMinutes = 23 * 60, deep = 70, rem = 90,
   }
 }
 
-export function addDaily(data, key, day, value, { source = WATCH, hour = 12, unit = "count" } = {}) {
-  const at = stamp(new Date(`${day}T${String(hour).padStart(2, "0")}:00:00Z`).getTime());
-  data[key].push({ value, unit, start: at, end: at, source });
+export function addDaily(data, key, day, value, { source = WATCH, hour = 12, minutes = 0, unit = "count" } = {}) {
+  const startMs = new Date(`${day}T${String(hour).padStart(2, "0")}:00:00Z`).getTime();
+  data[key].push({ value, unit, start: stamp(startMs), end: stamp(startMs + minutes * 60000), source });
 }
 
 /** A steady person: same numbers every day for `count` days ending at END. */
@@ -61,8 +61,11 @@ export function steadyData({
   hrv = 60,
   restingHR = 56,
   protein = null,
+  dateOfBirth = null,
+  sex = null,
 } = {}) {
   const data = emptyData();
+  data.profile = { dateOfBirth, sex };
   for (const day of daysBack(count)) {
     const core = sleepMinutes - deep - rem;
     addNight(data, day, { bedMinutes, deep, rem, core });

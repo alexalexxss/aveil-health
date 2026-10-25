@@ -184,9 +184,9 @@ function patternLines(summary, domains, focus) {
     }
     if (recovery.restingDays >= 5) {
       const value = formatUnit(recovery.restingHR, "bpm");
-      byDomain.recovery.push(recovery.restingHR <= MARKS.restingHrAthleteBpm
-        ? fill(PATTERNS.rhr_athlete, { value })
-        : fill(PATTERNS.rhr_steady, { value, period }));
+      byDomain.recovery.push(recovery.restingHR < MARKS.restingHrMarkBpm
+        ? fill(PATTERNS.rhr_under_mark, { value, threshold: `${MARKS.restingHrMarkBpm} bpm` })
+        : fill(PATTERNS.rhr_plain, { value, period }));
     }
   }
 

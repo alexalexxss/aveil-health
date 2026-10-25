@@ -24,6 +24,12 @@ test("the card shows the identity, score, standout sentence, and up to four fact
   assert.ok([2, 4].includes(model.cells.length));
 });
 
+test("the card shows the dates it covers", async () => {
+  const model = buildWrappedModel(await sampleSummary("steady"));
+  assert.equal(model.range, "Sep 24 – Oct 23, 2026");
+  assert.match(generateWrappedHTML(await sampleSummary("steady")).html, /<div class="range">Sep 24 – Oct 23, 2026<\/div>/);
+});
+
 test("a week uses the week wording", () => {
   const data = emptyData();
   for (const [index, day] of daysBack(20).entries()) addDaily(data, "steps", day, 5000 + (index % 3) * 10);
@@ -56,15 +62,33 @@ test("an empty window says so instead of drawing an empty card", () => {
   assert.match(html, /There are no tracked days in this window yet/);
 });
 
-test("the HTML makes no population claims and uses no em dashes", async () => {
+test("the only comparison with other people is the age band, and it names its group", async () => {
   for (const profile of ["steady", "short_sleep", "mover"]) {
-    const { html } = generateWrappedHTML(await sampleSummary(profile));
-    const text = html.replace(/<style[\s\S]*?<\/style>/, "").replace(/<[^>]+>/g, " ");
+    const summary = await sampleSummary(profile);
+    const { html } = generateWrappedHTML(summary);
+    const text = html.replace(/<style[\s\S]*?<\/style>/, "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ");
+    const withoutBand = text.replace(/Top ~(5|10|25)% recovery among people your age/, "");
+    assert.equal(withoutBand.length < text.length, summary.recoveryBand != null, profile);
+    assert.doesNotMatch(withoutBand, /\btop\s*~?\d|percentile|\d+\s?%/i, profile);
     assert.doesNotMatch(text, /—/, profile);
-    assert.doesNotMatch(text, /\btop\s*~?\d|percentile|\d+\s?%/i, profile);
     assert.doesNotMatch(text, /mortality|diagnos|\bpoor\b|\blow recovery/i, profile);
     assert.doesNotMatch(text, /\bThe [A-Z][a-z]+ ?[A-Z]?/, profile);
   }
+});
+
+test("the age band takes the featured spot in gold; without an age, the biggest move does", () => {
+  const withAge = buildWrappedModel(buildPeriodSummary(steadyData({ restingHR: 52, dateOfBirth: "1992-03-14" }), { days: 30 }));
+  assert.equal(withAge.featured.title, "Top ~5% recovery");
+  assert.equal(withAge.featured.detail, "among people your age");
+  assert.equal(withAge.featured.gold, true);
+  const html = generateWrappedHTML(buildPeriodSummary(steadyData({ restingHR: 52, dateOfBirth: "1992-03-14" }), { days: 30 })).html;
+  assert.match(html, /class="pill pill-gold"/);
+
+  const noAge = steadyData({ count: 60, steps: 9000, restingHR: 52 });
+  for (const day of daysBack(30)) addDaily(noAge, "steps", day, 11000, { source: "Test Apple Watch", hour: 13 });
+  const model = buildWrappedModel(buildPeriodSummary(noAge, { days: 30 }));
+  assert.equal(model.featured.metric, "steps");
+  assert.equal(model.featured.gold, false);
 });
 
 test("gold is kept for a perfect score", () => {

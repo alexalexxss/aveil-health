@@ -8,6 +8,7 @@
 export const SAMPLE_PROFILES = {
   // A well-rested, active person whose last month edged ahead of the one before.
   steady: {
+    dateOfBirth: "1992-03-14",
     bedtimeMinutes: 23 * 60 + 5,
     bedtimeJitter: 18,
     sleepMinutes: 446,
@@ -29,6 +30,7 @@ export const SAMPLE_PROFILES = {
   },
   // Short, irregular sleep and a light movement base.
   short_sleep: {
+    dateOfBirth: "1986-07-02",
     bedtimeMinutes: 24 * 60 + 25,
     bedtimeJitter: 62,
     sleepMinutes: 366,
@@ -50,6 +52,7 @@ export const SAMPLE_PROFILES = {
   },
   // Lots of walking and training; average sleep.
   mover: {
+    dateOfBirth: "1997-11-20",
     bedtimeMinutes: 22 * 60 + 50,
     bedtimeJitter: 35,
     sleepMinutes: 418,
@@ -102,7 +105,7 @@ export function buildSampleExportXml(options = {}) {
   lines.push('<?xml version="1.0" encoding="UTF-8"?>');
   lines.push('<HealthData locale="en_US">');
   lines.push(` <ExportDate value="${stamp(exportClock, offset)}"/>`);
-  lines.push(' <Me HKCharacteristicTypeIdentifierDateOfBirth="" HKCharacteristicTypeIdentifierBiologicalSex="HKBiologicalSexNotSet" HKCharacteristicTypeIdentifierBloodType="HKBloodTypeNotSet"/>');
+  lines.push(` <Me HKCharacteristicTypeIdentifierDateOfBirth="${profile.dateOfBirth ?? ""}" HKCharacteristicTypeIdentifierBiologicalSex="HKBiologicalSexNotSet" HKCharacteristicTypeIdentifierBloodType="HKBloodTypeNotSet"/>`);
 
   for (let index = days; index >= 1; index -= 1) {
     // `day` is local midnight of the day that ends with this night's wake-up.

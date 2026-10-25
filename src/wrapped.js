@@ -26,6 +26,7 @@ import {
   formatCount,
   formatDay,
   formatDuration,
+  formatRange,
   formatMinutesWords,
   formatUnit,
   joinList,
@@ -51,6 +52,7 @@ export function buildWrappedModel(summary) {
   const base = {
     period,
     periodLine: summary.period.label,
+    range: formatRange(summary.period.start, summary.period.end),
     hasData,
   };
   if (!hasData) return { ...base, emptyMessage: WRAPPED.noData };
@@ -61,7 +63,7 @@ export function buildWrappedModel(summary) {
     : standout.archetype;
   const archetype = ARCHETYPES[archetypeKey];
   const score = summary.scores.overall;
-  const featured = featuredMove(summary);
+  const featured = bandPill(summary) || featuredMove(summary);
 
   return {
     ...base,
@@ -123,6 +125,17 @@ function sentence(template, value, period, accent) {
   return { before, value, after, accent };
 }
 
+// The app's prestige line: an age-based band, shown only when the summary found one.
+function bandPill(summary) {
+  if (!summary.recoveryBand) return null;
+  return {
+    metric: null,
+    title: fill(WRAPPED.bandTitle, { value: summary.recoveryBand.band }),
+    detail: WRAPPED.bandDetail,
+    gold: true,
+  };
+}
+
 function featuredMove(summary) {
   const improved = summary.changes.filter((change) => change.improved);
   if (!improved.length) return null;
@@ -132,6 +145,7 @@ function featuredMove(summary) {
     metric: top.metric,
     title: changeTitle(top),
     detail: fill(WRAPPED.biggestMove, { period: summary.period.word }),
+    gold: false,
   };
 }
 
@@ -264,6 +278,7 @@ body{background:var(--bg);color:var(--ink);font-family:var(--sans);-webkit-font-
   linear-gradient(180deg,#1A1206 0%,#0B0907 38%,#0B0907 100%)}
 .eyebrow{font-family:var(--mono);font-weight:500;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:${accent};text-align:center}
 .period{font-family:var(--mono);font-size:12px;letter-spacing:.13em;text-transform:uppercase;color:var(--ink-3);text-align:center;margin-top:8px}
+.range{font-size:12px;color:var(--ink-3);text-align:center;margin-top:5px}
 .glyph{width:46px;height:46px;margin:26px auto 0;color:${accent}}
 .glyph svg{width:100%;height:100%;display:block}
 .title{font-weight:600;font-size:34px;line-height:1.05;letter-spacing:-.015em;text-align:center;margin-top:14px;color:${model.perfect ? "var(--gold)" : "var(--ink)"}}
@@ -276,6 +291,9 @@ body{background:var(--bg);color:var(--ink);font-family:var(--sans);-webkit-font-
 .pill{display:flex;align-items:center;gap:12px;min-height:64px;margin-top:20px;padding:12px 14px;border:1px solid rgba(217,122,43,0.28);background:rgba(217,122,43,0.06);border-radius:4px}
 .pill-title{font-weight:600;font-size:17px;line-height:1.25;color:var(--ink)}
 .pill-detail{font-size:12px;color:var(--ink-2);margin-top:2px}
+.pill-gold{border-color:rgba(232,180,90,0.55);background:rgba(232,180,90,0.12)}
+.pill-gold .pill-title{color:var(--gold)}
+.pill-gold .icon-box{background:rgba(232,180,90,0.12);color:var(--gold)}
 .icon-box{width:30px;height:30px;border-radius:4px;background:rgba(217,122,43,0.12);color:var(--amber);display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .icon-box svg{width:16px;height:16px;display:block}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
@@ -291,6 +309,7 @@ body{background:var(--bg);color:var(--ink);font-family:var(--sans);-webkit-font-
 .tag-fair{color:var(--muted);border-color:rgba(111,101,84,0.65)}
 .cut-eyebrow{font-family:var(--mono);font-weight:500;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:${accent}}
 .cut-period{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);margin-top:6px}
+.cut-range{font-size:12px;color:var(--ink-3);margin-top:4px}
 .section{font-family:var(--mono);font-weight:500;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-3);margin:26px 0 12px}
 .level{display:flex;align-items:center;gap:12px;padding:12px 0}
 .level + .level{border-top:1px solid var(--rule)}
@@ -335,12 +354,13 @@ function heroCard(model, accent) {
   return `<section class="story story-hero" aria-label="Aveil Wrapped">
   <div class="eyebrow">${escapeHtml(WRAPPED.eyebrow)}</div>
   <div class="period">${escapeHtml(model.periodLine)}</div>
+  <div class="range">${escapeHtml(model.range)}</div>
   <div class="glyph">${GLYPHS[model.glyph] || GLYPHS.tracker}</div>
   <h1 class="title">${escapeHtml(model.title)}</h1>
   <p class="tagline">${escapeHtml(model.tagline)}</p>
   ${model.score == null ? "" : scoreRing(model.score, accent)}
   <p class="hero">${heroHtml}</p>
-  ${model.featured ? `<div class="pill"><div class="icon-box">${ICONS.star}</div><div><div class="pill-title">${escapeHtml(model.featured.title)}</div><div class="pill-detail">${escapeHtml(model.featured.detail)}</div></div></div>` : ""}
+  ${model.featured ? `<div class="pill${model.featured.gold ? " pill-gold" : ""}"><div class="icon-box">${ICONS.star}</div><div><div class="pill-title">${escapeHtml(model.featured.title)}</div><div class="pill-detail">${escapeHtml(model.featured.detail)}</div></div></div>` : ""}
   ${model.cells.length ? `<div class="grid">${model.cells.map(cellHtml).join("")}</div>` : ""}
 </section>`;
 }
@@ -384,6 +404,7 @@ function detailCard(model) {
   return `<section class="story" aria-label="${escapeHtml(WRAPPED.deeperCut)}">
   <div class="cut-eyebrow">${escapeHtml(WRAPPED.eyebrow)}</div>
   <div class="cut-period">${escapeHtml(`${model.periodLine} · ${WRAPPED.deeperCut}`)}</div>
+  <div class="cut-range">${escapeHtml(model.range)}</div>
   ${levels ? `<div class="section">${escapeHtml(fill(WRAPPED.levelsHeading, { period: model.period }))}</div>${levels}` : ""}
   ${facts ? `<div class="section">${escapeHtml(WRAPPED.factsHeading)}</div><div class="facts">${facts}</div>` : ""}
 </section>`;

@@ -11,9 +11,9 @@ test("reads the wall clock where the reading was taken", () => {
   assert.equal(stamp.ms, Date.UTC(2026, 9, 25, 4, 30));
 });
 
-test("stops at the last complete day of the export", () => {
+test("stops at the day before the export, which is still unfinished", () => {
   assert.equal(lastCompleteDay({ exportDate: "2026-10-24 08:00:00 -0500" }), "2026-10-23");
-  assert.equal(lastCompleteDay({ exportDate: "2026-10-24 22:15:00 -0500" }), "2026-10-24");
+  assert.equal(lastCompleteDay({ exportDate: "2026-10-24 22:15:00 -0500" }), "2026-10-23");
 });
 
 test("averages a steady month exactly", () => {
@@ -33,6 +33,55 @@ test("does not count a watch and a phone twice on the same day", () => {
   for (const day of daysBack(10)) addDaily(data, "steps", day, 7000, { source: "Test iPhone" });
   const summary = buildPeriodSummary(data, { days: 7 });
   assert.equal(summary.current.activity.steps, 9000);
+});
+
+test("two watches covering the same hour count once", () => {
+  const data = emptyData();
+  for (const day of daysBack(10)) {
+    addDaily(data, "steps", day, 3000, { source: "Test Apple Watch", hour: 9, minutes: 60 });
+    addDaily(data, "steps", day, 2800, { source: "Old Apple Watch", hour: 9, minutes: 60 });
+  }
+  assert.equal(Math.round(buildPeriodSummary(data, { days: 7 }).current.activity.steps), 3000);
+});
+
+test("phone steps still count for the hours the watch was off", () => {
+  const data = emptyData();
+  for (const day of daysBack(10)) {
+    addDaily(data, "steps", day, 4000, { source: "Test Apple Watch", hour: 8, minutes: 120 });
+    // The phone saw the same morning walk, plus an afternoon without the watch.
+    addDaily(data, "steps", day, 3500, { source: "Test iPhone", hour: 8, minutes: 120 });
+    addDaily(data, "steps", day, 2500, { source: "Test iPhone", hour: 15, minutes: 60 });
+  }
+  assert.equal(Math.round(buildPeriodSummary(data, { days: 7 }).current.activity.steps), 6500);
+});
+
+test("a partial overlap counts only the uncovered part", () => {
+  const data = emptyData();
+  for (const day of daysBack(10)) {
+    addDaily(data, "steps", day, 1000, { source: "Test Apple Watch", hour: 10, minutes: 60 });
+    // 10:30 to 11:30 on the phone: half of it is already covered by the watch.
+    data.steps.push({ value: 800, unit: "count", start: `${day} 10:30:00 -0500`, end: `${day} 11:30:00 -0500`, source: "Test iPhone" });
+  }
+  assert.equal(Math.round(buildPeriodSummary(data, { days: 7 }).current.activity.steps), 1400);
+});
+
+test("sleep that runs past 6 PM stays one sleep", () => {
+  const data = emptyData();
+  for (const day of daysBack(10)) {
+    // A day sleeper: 10:00 to 16:00 core, then 16:00 to 18:30 REM.
+    data.sleep.push({ value: "HKCategoryValueSleepAnalysisAsleepCore", start: `${day} 10:00:00 -0500`, end: `${day} 16:00:00 -0500`, source: "Test Apple Watch" });
+    data.sleep.push({ value: "HKCategoryValueSleepAnalysisAsleepREM", start: `${day} 16:00:00 -0500`, end: `${day} 18:30:00 -0500`, source: "Test Apple Watch" });
+  }
+  const summary = buildPeriodSummary(data, { days: 7 });
+  assert.equal(summary.current.sleep.nights, 7);
+  assert.equal(Math.round(summary.current.sleep.averageMinutes), 510);
+});
+
+test("resting heart rate alone still counts as recovery coverage", () => {
+  const data = emptyData();
+  for (const day of daysBack(30)) addDaily(data, "restingHR", day, 58, { unit: "count/min" });
+  const summary = buildPeriodSummary(data, { days: 30 });
+  assert.equal(summary.coverage.recovery, 30);
 });
 
 test("keeps an afternoon nap out of the night's sleep", () => {
@@ -67,6 +116,20 @@ test("the score is the plain average of the three parts", () => {
   const half = buildPeriodSummary(steadyData({ sleepMinutes: 360, steps: 5000, restingHR: 65 }), { days: 30 });
   assert.deepEqual(half.scores.parts, { sleep: 50, activity: 50, recovery: 50 });
   assert.equal(half.scores.overall, 50);
+});
+
+test("unequal parts average plainly, with two or three parts", () => {
+  const three = buildPeriodSummary(steadyData({ sleepMinutes: 480, steps: 5000, restingHR: 80 }), { days: 30 });
+  assert.deepEqual(three.scores.parts, { sleep: 100, activity: 50, recovery: 0 });
+  assert.equal(three.scores.overall, 50);
+  const data = emptyData();
+  for (const day of daysBack(30)) {
+    addNight(data, day, { deep: 70, rem: 90, core: 320 });
+    addDaily(data, "steps", day, 5000);
+  }
+  const two = buildPeriodSummary(data, { days: 30 });
+  assert.deepEqual(two.scores.parts, { sleep: 100, activity: 50 });
+  assert.equal(two.scores.overall, 75);
 });
 
 test("no score with fewer than two parts", () => {
@@ -143,4 +206,35 @@ test("trend arrows use a 3% steady band", () => {
   assert.equal(directionFor(97.5, 100), "steady");
   assert.equal(directionFor(96, 100), "down");
   assert.equal(directionFor(null, 100), null);
+});
+
+test("the recovery band needs a known age", () => {
+  assert.equal(buildPeriodSummary(steadyData({ restingHR: 52 }), { days: 30 }).recoveryBand, null);
+});
+
+test("the recovery band rounds to top 5, 10, or 25% and stays quiet below the top quarter", () => {
+  const bandFor = (restingHR, extra = {}) => buildPeriodSummary(
+    steadyData({ restingHR, hrv: 40, dateOfBirth: "1992-03-14", ...extra }), { days: 30 }).recoveryBand;
+  // Age 34: resting heart rate norm 67 bpm, spread 9.
+  assert.deepEqual(bandFor(52), { band: 5, basis: "rhr" });
+  assert.deepEqual(bandFor(55), { band: 10, basis: "rhr" });
+  assert.deepEqual(bandFor(60), { band: 25, basis: "rhr" });
+  assert.equal(bandFor(64), null);
+});
+
+test("HRV is used first, against the SDNN norm for the age", () => {
+  const summary = buildPeriodSummary(steadyData({ hrv: 90, restingHR: 52, dateOfBirth: "1992-03-14" }), { days: 30 });
+  assert.deepEqual(summary.recoveryBand, { band: 10, basis: "hrv" });
+});
+
+test("women's resting heart rate norm sits 3 bpm higher", () => {
+  const bandFor = (sex) => buildPeriodSummary(
+    steadyData({ restingHR: 61, hrv: 40, dateOfBirth: "1992-03-14", sex }), { days: 30 }).recoveryBand;
+  assert.deepEqual(bandFor("HKBiologicalSexFemale"), { band: 25, basis: "rhr" });
+  assert.equal(bandFor("HKBiologicalSexMale"), null);
+});
+
+test("the recovery band needs at least 10 days of readings", () => {
+  const summary = buildPeriodSummary(steadyData({ count: 9, restingHR: 50, dateOfBirth: "1992-03-14" }), { days: 30 });
+  assert.equal(summary.recoveryBand, null);
 });

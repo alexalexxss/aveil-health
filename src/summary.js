@@ -4,8 +4,9 @@
  * Everything here is a simple, standard measure: daily totals, averages,
  * the last 7 days against the whole period, this period against the one
  * before it, sleep stages, and a few common reference marks (for example
- * 7,000 steps a day or 60 minutes of deep sleep). There is no personal
- * modelling, ranking, or scoring beyond what the README describes.
+ * 7,000 steps a day or 60 minutes of deep sleep). The one comparison with
+ * other people is the age-based recovery band, rounded to top ~5, 10, or 25%.
+ * The README describes every rule.
  */
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -22,7 +23,8 @@ export const MARKS = {
   stepsStrong: 7000,
   stepsLow: 5000,
   hrvStrongMs: 55,
-  restingHrAthleteBpm: 55,
+  restingHrStrongBpm: 55,
+  restingHrMarkBpm: 60,
   bedtimeSteadyMinutes: 30,
   bedtimeDriftMinutes: 60,
   proteinStrongGrams: 100,
@@ -54,6 +56,14 @@ const MEANINGFUL_CHANGE = {
 
 const STRENGTH_TYPES = new Set(["TraditionalStrengthTraining", "FunctionalStrengthTraining", "CoreTraining"]);
 
+// Published wearable-population norms by age band, (max age, mean, sd): the
+// same tables the Aveil app uses for its "Top ~X% recovery" line. Apple Watch
+// HRV is SDNN, so it is only ever compared with SDNN norms.
+const HRV_SDNN_NORMS = [[29, 68, 24], [39, 56, 21], [49, 47, 18], [59, 41, 16], [200, 36, 15]];
+const RESTING_HR_NORMS = [[29, 66, 9], [39, 67, 9], [49, 68, 9], [59, 68, 9], [200, 68, 9]];
+const RESTING_HR_FEMALE_OFFSET = 3;
+const BAND_MIN_DAYS = 10;
+
 /**
  * Build the summary for the last `days` complete days of an export.
  * @param {object} data - output of parseHealthExport, read with at least 2 × days of history
@@ -73,8 +83,8 @@ export function buildPeriodSummary(data, options = {}) {
   const nights = buildNights(data.sleep || []);
   const hrv = dailyValues(data.hrv || [], "mean", sourceRank);
   const restingHR = dailyValues(data.restingHR || [], "mean", sourceRank);
-  const steps = dailyValues(data.steps || [], "sum", sourceRank);
-  const activeEnergy = dailyValues(data.activeEnergy || [], "sum", sourceRank);
+  const steps = dailyTotals(data.steps || []);
+  const activeEnergy = dailyTotals(data.activeEnergy || []);
   const protein = dailyValues(data.dietaryProtein || [], "sum", null, true);
   const calories = dailyValues(data.dietaryEnergy || [], "sum", null, true);
   const workouts = buildWorkouts(data.workouts || []);
@@ -96,7 +106,7 @@ export function buildPeriodSummary(data, options = {}) {
     },
     coverage: {
       sleep: current.sleep.nights,
-      recovery: current.recovery.hrvDays,
+      recovery: current.recovery.days,
       activity: current.activity.days,
       nutrition: current.nutrition.days,
       days,
@@ -106,8 +116,10 @@ export function buildPeriodSummary(data, options = {}) {
     recent,
   };
 
+  summary.person = personFrom(data.profile, end);
   summary.changes = buildChanges(current, previous);
   summary.scores = buildScores(current);
+  summary.recoveryBand = recoveryBand(current, summary.person);
   summary.highlights = buildHighlights(summary);
   summary.facts = buildFacts(current);
   summary.standout = pickStandout(summary);
@@ -115,13 +127,13 @@ export function buildPeriodSummary(data, options = {}) {
 }
 
 /**
- * The last day whose activity is complete. An export made before 9 PM still
- * has an unfinished export day, so the window stops the day before.
+ * The last complete day: the day before the export, because the export day
+ * itself is still unfinished.
  */
 export function lastCompleteDay(data) {
   const exportStamp = parseStamp(data.exportDate);
   if (exportStamp) {
-    return exportStamp.minutes >= 21 * 60 ? exportStamp.day : addDays(exportStamp.day, -1);
+    return addDays(exportStamp.day, -1);
   }
   let latest = null;
   for (const key of ["steps", "sleep", "hrv", "activeEnergy"]) {
@@ -144,6 +156,7 @@ function periodStats({ windowDays, nights, hrv, restingHR, steps, activeEnergy, 
   const pick = (map) => windowDays.filter((day) => map.has(day)).map((day) => ({ day, value: map.get(day) }));
   const hrvDays = pick(hrv);
   const rhrDays = pick(restingHR);
+  const recoveryDays = new Set([...hrvDays, ...rhrDays].map((entry) => entry.day));
   const stepDays = pick(steps).filter((entry) => entry.value > 0);
   const energyDays = pick(activeEnergy).filter((entry) => entry.value > 0);
   const proteinDays = pick(protein).filter((entry) => entry.value > 0);
@@ -168,6 +181,7 @@ function periodStats({ windowDays, nights, hrv, restingHR, steps, activeEnergy, 
       bestStreak: longestStreak(windowDays, (day) => (nights.get(day)?.asleepMinutes ?? 0) >= MARKS.sleepMinutes),
     },
     recovery: {
+      days: recoveryDays.size,
       hrvDays: hrvDays.length,
       hrv: mean(hrvDays.map((entry) => entry.value)),
       hrvPeak: maxBy(hrvDays, (entry) => entry.value),
@@ -376,8 +390,8 @@ function pickStandout(summary) {
   const strengths = [];
   if (current.recovery.hrvDays >= 5 && current.recovery.hrv >= MARKS.hrvStrongMs) {
     strengths.push({ dimension: "recovery", basis: "hrv", ratio: current.recovery.hrv / MARKS.hrvStrongMs, priority: 0 });
-  } else if (current.recovery.restingDays >= 5 && current.recovery.restingHR <= MARKS.restingHrAthleteBpm) {
-    strengths.push({ dimension: "recovery", basis: "rhr", ratio: MARKS.restingHrAthleteBpm / current.recovery.restingHR, priority: 0 });
+  } else if (current.recovery.restingDays >= 5 && current.recovery.restingHR <= MARKS.restingHrStrongBpm) {
+    strengths.push({ dimension: "recovery", basis: "rhr", ratio: MARKS.restingHrStrongBpm / current.recovery.restingHR, priority: 0 });
   }
   if (current.sleep.stagedNights >= 5 && current.sleep.deepMinutes >= MARKS.deepStrongMinutes) {
     strengths.push({ dimension: "deep_sleep", basis: "deep", ratio: current.sleep.deepMinutes / MARKS.deepStrongMinutes, priority: 1 });
@@ -401,6 +415,73 @@ function pickStandout(summary) {
     return { archetype: "on_the_rise", dimension: null, strengths };
   }
   return { archetype: "tracker", dimension: null, strengths };
+}
+
+// ─── Age-based recovery band ───
+
+function personFrom(profile = {}, onDay) {
+  const birth = /^(\d{4})-(\d{2})-(\d{2})/.exec(profile.dateOfBirth || "");
+  let age = null;
+  if (birth) {
+    const [year, month, day] = onDay.split("-").map(Number);
+    age = year - Number(birth[1]) - (month < Number(birth[2]) || (month === Number(birth[2]) && day < Number(birth[3])) ? 1 : 0);
+    if (age < 13 || age > 110) age = null;
+  }
+  const sex = /Female/.test(profile.sex || "") ? "female" : /Male/.test(profile.sex || "") ? "male" : null;
+  return { age, sex };
+}
+
+/**
+ * "Top ~X% recovery among people your age": the person's own average from at
+ * least 10 days, placed on a published age-based norm and rounded to a coarse
+ * band (top 5, 10, or 25%). HRV first, then resting heart rate. Nothing when
+ * the age is unknown or the average is not in the top quarter.
+ */
+function recoveryBand(current, person) {
+  if (person.age == null) return null;
+  const { recovery } = current;
+  if (recovery.hrvDays >= BAND_MIN_DAYS && recovery.hrv != null) {
+    const [mean, sd] = normFor(HRV_SDNN_NORMS, person.age);
+    const band = coarseBand(upperTail((recovery.hrv - mean) / sd));
+    if (band) return { band, basis: "hrv" };
+  }
+  if (recovery.restingDays >= BAND_MIN_DAYS && recovery.restingHR != null) {
+    let [mean, sd] = normFor(RESTING_HR_NORMS, person.age);
+    if (person.sex === "female") mean += RESTING_HR_FEMALE_OFFSET;
+    // Lower resting heart rate is the stronger read.
+    const band = coarseBand(upperTail((mean - recovery.restingHR) / sd));
+    if (band) return { band, basis: "rhr" };
+  }
+  return null;
+}
+
+function normFor(table, age) {
+  for (const [maxAge, mean, sd] of table) {
+    if (age <= maxAge) return [mean, sd];
+  }
+  const last = table[table.length - 1];
+  return [last[1], last[2]];
+}
+
+// Round to the least impressive coarse band the read clears, so it never overclaims.
+function coarseBand(topFraction) {
+  if (!(topFraction <= 0.25)) return null;
+  if (topFraction <= 0.05) return 5;
+  if (topFraction <= 0.1) return 10;
+  return 25;
+}
+
+// P(X > mean + z·sd) for a normal distribution.
+function upperTail(z) {
+  return 0.5 * erfc(z / Math.SQRT2);
+}
+
+// Abramowitz and Stegun 7.1.26, accurate to about 1e-7.
+function erfc(x) {
+  const t = 1 / (1 + 0.3275911 * Math.abs(x));
+  const poly = t * (0.254829592 + t * (-0.284496736 + t * (1.421413741 + t * (-1.453152027 + t * 1.061405429))));
+  const value = poly * Math.exp(-x * x);
+  return x >= 0 ? value : 2 - value;
 }
 
 // ─── Tiers ───
@@ -438,63 +519,86 @@ export function directionFor(latest, baseline) {
 // ─── Sleep nights ───
 
 function buildNights(records) {
-  const byNight = new Map();
+  const segments = [];
   for (const record of records) {
     if (record.value === "HKCategoryValueSleepAnalysisInBed") continue;
     const start = parseStamp(record.start);
     const end = parseStamp(record.end);
     if (!start || !end || end.ms <= start.ms) continue;
-    // A night belongs to the morning it ends; sleep that ends in the evening
-    // belongs to the next morning.
-    const key = end.minutes >= 18 * 60 ? addDays(end.day, 1) : end.day;
-    if (!byNight.has(key)) byNight.set(key, []);
-    byNight.get(key).push({ value: record.value, source: record.source || "", startMs: start.ms, endMs: end.ms, startMinutes: start.minutes });
+    segments.push({ value: record.value, source: record.source || "", startMs: start.ms, endMs: end.ms, startMinutes: start.minutes, end });
+  }
+  segments.sort((a, b) => a.startMs - b.startMs);
+
+  // Build whole sleep sessions first: readings closer than two hours belong
+  // together, even when they cross midnight or 6 PM.
+  const sessions = [];
+  let current = null;
+  for (const segment of segments) {
+    if (current && segment.startMs - current.endMs <= SESSION_GAP_MINUTES * 60000) {
+      current.segments.push(segment);
+      if (segment.endMs > current.endMs) {
+        current.endMs = segment.endMs;
+        current.end = segment.end;
+      }
+    } else {
+      current = { segments: [segment], endMs: segment.endMs, end: segment.end };
+      sessions.push(current);
+    }
   }
 
   const nights = new Map();
-  for (const [day, segments] of byNight) {
-    const merged = mergeSegments(segments);
-    const session = mainSession(merged);
-    if (!session) continue;
-
-    let deep = 0;
-    let rem = 0;
-    let core = 0;
-    let unspecified = 0;
-    let awake = 0;
-    let firstAsleep = null;
-    for (const segment of session) {
-      const minutes = (segment.endMs - segment.startMs) / 60000;
-      switch (segment.value) {
-        case "HKCategoryValueSleepAnalysisAsleepDeep": deep += minutes; break;
-        case "HKCategoryValueSleepAnalysisAsleepREM": rem += minutes; break;
-        case "HKCategoryValueSleepAnalysisAsleepCore": core += minutes; break;
-        case "HKCategoryValueSleepAnalysisAsleepUnspecified":
-        case "HKCategoryValueSleepAnalysisAsleep": unspecified += minutes; break;
-        case "HKCategoryValueSleepAnalysisAwake": awake += minutes; break;
-        default: break;
-      }
-      if (segment.value !== "HKCategoryValueSleepAnalysisAwake" && (!firstAsleep || segment.startMs < firstAsleep.startMs)) {
-        firstAsleep = segment;
-      }
+  for (const session of sessions) {
+    const night = summarizeSession(session);
+    if (!night) continue;
+    // A night belongs to the morning it ends; sleep that ends in the evening
+    // belongs to the next morning. The longest session of the day is the main
+    // sleep, so naps stay out.
+    const day = session.end.minutes >= 18 * 60 ? addDays(session.end.day, 1) : session.end.day;
+    const existing = nights.get(day);
+    if (!existing || night.asleepMinutes > existing.asleepMinutes) {
+      nights.set(day, { day, ...night });
     }
-
-    const asleep = deep + rem + core + unspecified;
-    if (asleep < MIN_MAIN_SLEEP_MINUTES || asleep > 16 * 60 || !firstAsleep) continue;
-    const startMinutes = firstAsleep.startMinutes;
-    nights.set(day, {
-      day,
-      asleepMinutes: asleep,
-      deepMinutes: deep,
-      remMinutes: rem,
-      coreMinutes: core + unspecified,
-      awakeMinutes: awake,
-      hasStages: deep + rem > 0,
-      // Minutes after the previous midnight, so 00:30 reads as 24:30.
-      bedtimeMinutes: startMinutes < 12 * 60 ? startMinutes + 24 * 60 : startMinutes,
-    });
   }
   return nights;
+}
+
+function summarizeSession(session) {
+  const merged = mergeSegments(session.segments);
+  let deep = 0;
+  let rem = 0;
+  let core = 0;
+  let unspecified = 0;
+  let awake = 0;
+  let firstAsleep = null;
+  for (const segment of merged) {
+    const minutes = (segment.endMs - segment.startMs) / 60000;
+    switch (segment.value) {
+      case "HKCategoryValueSleepAnalysisAsleepDeep": deep += minutes; break;
+      case "HKCategoryValueSleepAnalysisAsleepREM": rem += minutes; break;
+      case "HKCategoryValueSleepAnalysisAsleepCore": core += minutes; break;
+      case "HKCategoryValueSleepAnalysisAsleepUnspecified":
+      case "HKCategoryValueSleepAnalysisAsleep": unspecified += minutes; break;
+      case "HKCategoryValueSleepAnalysisAwake": awake += minutes; break;
+      default: break;
+    }
+    if (segment.value !== "HKCategoryValueSleepAnalysisAwake" && (!firstAsleep || segment.startMs < firstAsleep.startMs)) {
+      firstAsleep = segment;
+    }
+  }
+
+  const asleep = deep + rem + core + unspecified;
+  if (asleep < MIN_MAIN_SLEEP_MINUTES || asleep > 16 * 60 || !firstAsleep) return null;
+  const startMinutes = firstAsleep.startMinutes;
+  return {
+    asleepMinutes: asleep,
+    deepMinutes: deep,
+    remMinutes: rem,
+    coreMinutes: core + unspecified,
+    awakeMinutes: awake,
+    hasStages: deep + rem > 0,
+    // Minutes after the previous midnight, so 00:30 reads as 24:30.
+    bedtimeMinutes: startMinutes < 12 * 60 ? startMinutes + 24 * 60 : startMinutes,
+  };
 }
 
 // When two devices record the same minutes, keep one reading: the higher-ranked
@@ -518,27 +622,6 @@ function mergeSegments(segments) {
     merged.push({ value: chosen.value, startMs, endMs, startMinutes: ((startMinutes % 1440) + 1440) % 1440 });
   }
   return merged;
-}
-
-// The longest block of sleep separated from others by more than two hours.
-// This keeps an afternoon nap out of the night's totals.
-function mainSession(segments) {
-  if (!segments.length) return null;
-  const sessions = [];
-  let currentSession = [segments[0]];
-  for (const segment of segments.slice(1)) {
-    const gap = (segment.startMs - currentSession[currentSession.length - 1].endMs) / 60000;
-    if (gap > SESSION_GAP_MINUTES) {
-      sessions.push(currentSession);
-      currentSession = [segment];
-    } else {
-      currentSession.push(segment);
-    }
-  }
-  sessions.push(currentSession);
-  return maxBy(sessions, (session) => sum(session
-    .filter((segment) => segment.value !== "HKCategoryValueSleepAnalysisAwake")
-    .map((segment) => segment.endMs - segment.startMs)));
 }
 
 function stageRank(value) {
@@ -575,6 +658,91 @@ function dailyValues(records, mode, rank, dedupeExact = false) {
     result.set(day, mode === "mean" ? mean(values) : sum(values));
   }
   return result;
+}
+
+/**
+ * Daily totals for counts like steps, where a watch and a phone (or two
+ * watches) often record the same minutes. Readings are taken in device order
+ * (watch, then phone, then others; the busier device first within a kind); a
+ * reading only counts for the minutes no earlier device already covered, so
+ * overlaps count once and a phone still counts the hours the watch was off.
+ */
+function dailyTotals(records) {
+  const byDay = new Map();
+  for (const record of records) {
+    const start = parseStamp(record.start);
+    const end = parseStamp(record.end) || start;
+    const value = Number(record.value);
+    if (!start || !Number.isFinite(value) || value < 0) continue;
+    if (!byDay.has(start.day)) byDay.set(start.day, []);
+    byDay.get(start.day).push({ value, source: record.source || "", startMs: start.ms, endMs: Math.max(start.ms, end.ms) });
+  }
+
+  const result = new Map();
+  for (const [day, dayRecords] of byDay) {
+    // Between two devices of the same kind, trust the one that recorded more that day.
+    const sourceTotals = new Map();
+    for (const record of dayRecords) sourceTotals.set(record.source, (sourceTotals.get(record.source) || 0) + record.value);
+    const ordered = dayRecords.slice().sort((a, b) =>
+      sourceRank(b.source) - sourceRank(a.source)
+      || sourceTotals.get(b.source) - sourceTotals.get(a.source)
+      || (a.source < b.source ? -1 : a.source > b.source ? 1 : 0)
+      || a.startMs - b.startMs);
+    const covered = [];
+    const instants = new Set();
+    let total = 0;
+    for (const record of ordered) {
+      const length = record.endMs - record.startMs;
+      if (length === 0) {
+        if (!isCovered(covered, record.startMs) && !instants.has(record.startMs)) total += record.value;
+        instants.add(record.startMs);
+        continue;
+      }
+      const overlap = coveredLength(covered, record.startMs, record.endMs);
+      total += record.value * Math.max(0, (length - overlap) / length);
+      addInterval(covered, record.startMs, record.endMs);
+    }
+    result.set(day, total);
+  }
+  return result;
+}
+
+// `covered` is a sorted list of non-overlapping [start, end] intervals.
+function coveredLength(covered, start, end) {
+  let length = 0;
+  for (let index = firstEndingAfter(covered, start); index < covered.length && covered[index][0] < end; index += 1) {
+    length += Math.min(end, covered[index][1]) - Math.max(start, covered[index][0]);
+  }
+  return length;
+}
+
+function isCovered(covered, at) {
+  const index = firstEndingAfter(covered, at);
+  return index < covered.length && covered[index][0] <= at;
+}
+
+function addInterval(covered, start, end) {
+  let index = firstEndingAfter(covered, start - 1);
+  let from = start;
+  let to = end;
+  let remove = 0;
+  while (index + remove < covered.length && covered[index + remove][0] <= to) {
+    from = Math.min(from, covered[index + remove][0]);
+    to = Math.max(to, covered[index + remove][1]);
+    remove += 1;
+  }
+  covered.splice(index, remove, [from, to]);
+}
+
+function firstEndingAfter(covered, at) {
+  let low = 0;
+  let high = covered.length;
+  while (low < high) {
+    const middle = (low + high) >> 1;
+    if (covered[middle][1] > at) high = middle;
+    else low = middle + 1;
+  }
+  return low;
 }
 
 function dedupe(records) {
