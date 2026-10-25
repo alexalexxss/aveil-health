@@ -117,3 +117,13 @@ test("a workouts-only export still gets a card and a brief", async () => {
   assert.match(html, /Workouts logged: 15 this month, including 15 strength sessions\./);
   assert.doesNotMatch(html, /not enough tracked data/);
 });
+
+test("level scales wait for 5 days of data instead of showing the lowest level", () => {
+  for (const [count, expected] of [[3, null], [4, null], [5, 4]]) {
+    const model = buildWrappedModel(buildPeriodSummary(steadyData({ count, sleepMinutes: 480, steps: 10000, restingHR: 50 }), { days: 7 }));
+    const levels = Object.fromEntries(model.levels.map((row) => [row.title, row.level]));
+    assert.deepEqual(levels, { Sleep: expected, "Resting heart rate": expected, Steps: expected }, `${count} days`);
+  }
+  const html = generateWrappedHTML(buildPeriodSummary(steadyData({ count: 4, sleepMinutes: 480, steps: 10000, restingHR: 50 }), { days: 7 })).html;
+  assert.doesNotMatch(html, /class="scale"/);
+});

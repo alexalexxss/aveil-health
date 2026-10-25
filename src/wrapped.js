@@ -225,9 +225,10 @@ function levelRows(summary) {
   return rows;
 }
 
-// Four-step level scale, like the app's level rows.
+// Four-step level scale, like the app's level rows. No score yet (fewer than
+// 5 days) means no scale, rather than a misleading lowest level.
 function bucket(score) {
-  if (score == null) return 1;
+  if (score == null) return null;
   if (score >= 85) return 4;
   if (score >= 65) return 3;
   if (score >= 40) return 2;
@@ -390,7 +391,7 @@ function detailCard(model) {
       <div class="level-main">
         <div class="level-title">${escapeHtml(row.title)}</div>
         <div class="level-value">${escapeHtml(row.value)}</div>
-        <div class="scale" aria-label="Level ${row.level} of 4">${[1, 2, 3, 4].map((step) => `<span class="${step <= row.level ? "on" : ""}"></span>`).join("")}</div>
+        ${row.level == null ? "" : `<div class="scale" aria-label="Level ${row.level} of 4">${[1, 2, 3, 4].map((step) => `<span class="${step <= row.level ? "on" : ""}"></span>`).join("")}</div>`}
       </div>
       ${row.delta ? `<div class="level-delta">${ICONS.arrowUp}${escapeHtml(row.delta)}</div>` : ""}
     </div>`).join("");
