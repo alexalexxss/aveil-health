@@ -4,7 +4,7 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
-import { parseHealthExport, parseHealthExportXml } from "../src/parser.js";
+import { openExportStream, parseHealthExport, parseHealthExportXml } from "../src/parser.js";
 import { makeZip } from "./helpers/zip.js";
 import { exportXml, quantity } from "./helpers/xml.js";
 
@@ -89,10 +89,28 @@ test("rejected zip reads do not leave files open", async () => {
   const { readdirSync } = await import("node:fs");
   await withTempDir(async (dir) => {
     const zipPath = path.join(dir, "export.zip");
-    writeFileSync(zipPath, makeZip([{ name: "apple_health_export/export.xml", data: "not xml at all" }]));
+    // Large enough that reading stops mid-file, before the stream can end on its own.
+    writeFileSync(zipPath, makeZip([{ name: "apple_health_export/export.xml", data: "not xml at all ".repeat(200000) }]));
     const before = readdirSync(fdDir).length;
     for (let attempt = 0; attempt < 25; attempt += 1) {
       await assert.rejects(parseHealthExport(zipPath), /not an Apple Health export/);
+    }
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    assert.ok(readdirSync(fdDir).length <= before + 2, "file descriptors leaked");
+  });
+});
+
+test("closing a zip stream without an error still releases the archive", async () => {
+  const fdDir = process.platform === "linux" ? "/proc/self/fd" : "/dev/fd";
+  const { readdirSync } = await import("node:fs");
+  await withTempDir(async (dir) => {
+    const zipPath = path.join(dir, "export.zip");
+    writeFileSync(zipPath, makeZip([{ name: "apple_health_export/export.xml", data: xml.repeat(2000) }]));
+    const before = readdirSync(fdDir).length;
+    for (let attempt = 0; attempt < 25; attempt += 1) {
+      const stream = await openExportStream(zipPath);
+      stream.destroy();
+      await new Promise((resolve) => stream.once("close", resolve));
     }
     await new Promise((resolve) => setTimeout(resolve, 50));
     assert.ok(readdirSync(fdDir).length <= before + 2, "file descriptors leaked");
