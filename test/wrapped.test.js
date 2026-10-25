@@ -102,3 +102,18 @@ test("gold is kept for a perfect score", () => {
 test("old analyze() reports get a clear error", () => {
   assert.throws(() => generateWrappedHTML({ overall: { score: 80 } }), /buildPeriodSummary/);
 });
+
+test("a workouts-only export still gets a card and a brief", async () => {
+  const { generateHealthConsultBriefHTML } = await import("../src/brief.js");
+  const data = emptyData();
+  for (const [index, day] of daysBack(30).entries()) {
+    if (index % 2 === 0) data.workouts.push({ type: "TraditionalStrengthTraining", duration: 45, durationUnit: "min", start: `${day} 18:00:00 -0500`, end: `${day} 18:45:00 -0500`, source: "Test Apple Watch" });
+  }
+  const summary = buildPeriodSummary(data, { days: 30 });
+  const model = buildWrappedModel(summary);
+  assert.equal(model.hasData, true);
+  assert.ok(model.cells.some((cell) => cell.label === "Strength sessions"));
+  const { html } = generateHealthConsultBriefHTML(summary);
+  assert.match(html, /Workouts logged: 15 this month, including 15 strength sessions\./);
+  assert.doesNotMatch(html, /not enough tracked data/);
+});

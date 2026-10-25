@@ -76,7 +76,7 @@ Everything is a simple, standard measure, so you can check it yourself:
 - **This period vs the one before** on the Wrapped card, shown only when the change is big enough to matter (for example 10 minutes of deep sleep or 1,000 steps a day).
 - **Sleep stages** from your watch, one main sleep per day. Naps are left out.
 - **Common reference marks**, such as 7 to 9 hours of sleep, 60 minutes of deep sleep, and 7,000 steps a day. Tags on the card are fixed marks too: 8,000 steps a day is Strong and 15,000 is Elite.
-- **One comparison with other people:** the Wrapped card can say *Top ~10% recovery, among people your age*. It places your average HRV (or resting heart rate) from at least 10 days on published age-based norms, rounds to top ~5%, ~10%, or ~25%, and shows nothing unless you are in the top quarter. It needs your date of birth in Apple Health.
+- **One comparison with other people:** the Wrapped card can say *Top ~10% recovery, among people your age*. It places your average HRV (or resting heart rate) from at least 10 days on the age-based norm tables the Aveil app uses, rounds to top ~5%, ~10%, or ~25%, and shows nothing unless you are in the top quarter. It needs your date of birth in Apple Health.
 - **The score** is the plain average of up to three parts: sleep (4 to 8 hours), steps (0 to 10,000 a day), and resting heart rate (80 down to 50 bpm). It shows only when at least two parts have 5 or more days of data.
 
 When a watch and a phone count the same minutes, those steps count once, and the phone still counts the hours the watch was off.

@@ -1,12 +1,16 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
 import { openExportStream, parseHealthExport, parseHealthExportXml } from "../src/parser.js";
 import { makeZip } from "./helpers/zip.js";
 import { exportXml, quantity } from "./helpers/xml.js";
+
+// Open files are counted through /dev/fd (macOS) or /proc/self/fd (Linux).
+const FD_DIR = process.platform === "linux" ? "/proc/self/fd" : "/dev/fd";
+const CAN_COUNT_FDS = process.platform !== "win32" && existsSync(FD_DIR);
 
 const xml = exportXml({
   records: [
@@ -84,9 +88,8 @@ test("can skip raw heart-rate samples", async () => {
   assert.equal(data.steps.length, 2);
 });
 
-test("rejected zip reads do not leave files open", async () => {
-  const fdDir = process.platform === "linux" ? "/proc/self/fd" : "/dev/fd";
-  const { readdirSync } = await import("node:fs");
+test("rejected zip reads do not leave files open", { skip: !CAN_COUNT_FDS && "no open-file listing on this platform" }, async () => {
+  const fdDir = FD_DIR;
   await withTempDir(async (dir) => {
     const zipPath = path.join(dir, "export.zip");
     // Large enough that reading stops mid-file, before the stream can end on its own.
@@ -100,9 +103,8 @@ test("rejected zip reads do not leave files open", async () => {
   });
 });
 
-test("closing a zip stream without an error still releases the archive", async () => {
-  const fdDir = process.platform === "linux" ? "/proc/self/fd" : "/dev/fd";
-  const { readdirSync } = await import("node:fs");
+test("closing a zip stream without an error still releases the archive", { skip: !CAN_COUNT_FDS && "no open-file listing on this platform" }, async () => {
+  const fdDir = FD_DIR;
   await withTempDir(async (dir) => {
     const zipPath = path.join(dir, "export.zip");
     writeFileSync(zipPath, makeZip([{ name: "apple_health_export/export.xml", data: xml.repeat(2000) }]));

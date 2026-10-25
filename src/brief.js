@@ -91,7 +91,7 @@ function hasDomain(summary, domain) {
   switch (domain) {
     case "sleep": return current.sleep.nights >= 3;
     case "recovery": return current.recovery.hrvDays >= 3 || current.recovery.restingDays >= 3;
-    case "activity": return current.activity.days >= 3;
+    case "activity": return current.activity.coverageDays >= 3;
     case "nutrition": return current.nutrition.days >= 3;
     default: return false;
   }
@@ -118,18 +118,19 @@ function pickFocus(summary, domains, mode) {
   const hrv = change("hrv");
   const rhr = change("restingHR");
 
+  const hasSteps = steps != null && current.activity.days >= 3;
   const clear = {
-    sleep: sleep.averageMinutes < 390 || sleep.bedtimeSpreadMinutes > 75,
+    sleep: sleep.averageMinutes != null && (sleep.averageMinutes < 390 || sleep.bedtimeSpreadMinutes > 75),
     recovery: Boolean((hrv && hrv.before > 0 && (hrv.now - hrv.before) / hrv.before <= -0.1) || (rhr && rhr.delta >= 3)),
-    activity: steps < MARKS.stepsLow,
+    activity: hasSteps && steps < MARKS.stepsLow,
     nutrition: proteinDays >= 7 && protein < 60,
   };
   const first = usable.find((domain) => clear[domain]);
   if (first) return first;
 
   const mild = [
-    ["sleep", sleep.averageMinutes < MARKS.sleepMinutes ? (MARKS.sleepMinutes - sleep.averageMinutes) / MARKS.sleepMinutes : 0],
-    ["activity", steps < MARKS.stepsStrong ? (MARKS.stepsStrong - steps) / MARKS.stepsStrong : 0],
+    ["sleep", sleep.averageMinutes != null && sleep.averageMinutes < MARKS.sleepMinutes ? (MARKS.sleepMinutes - sleep.averageMinutes) / MARKS.sleepMinutes : 0],
+    ["activity", hasSteps && steps < MARKS.stepsStrong ? (MARKS.stepsStrong - steps) / MARKS.stepsStrong : 0],
     ["nutrition", proteinDays >= 7 && protein < MARKS.proteinLowGrams ? (MARKS.proteinLowGrams - protein) / MARKS.proteinLowGrams : 0],
   ].filter(([domain, gap]) => usable.includes(domain) && gap > 0);
   if (mild.length) return mild.sort((a, b) => b[1] - a[1])[0][0];
@@ -190,7 +191,7 @@ function patternLines(summary, domains, focus) {
     }
   }
 
-  if (domains.includes("activity")) {
+  if (domains.includes("activity") && current.activity.days >= 3) {
     const value = formatUnit(current.activity.steps, "steps");
     if (current.activity.steps >= MARKS.stepsStrong) byDomain.activity.push(fill(PATTERNS.steps_strong, { value, threshold: "7,000-step" }));
     else if (current.activity.steps >= MARKS.stepsLow) byDomain.activity.push(fill(PATTERNS.steps_solid, { value, period }));

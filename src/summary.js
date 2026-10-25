@@ -56,9 +56,9 @@ const MEANINGFUL_CHANGE = {
 
 const STRENGTH_TYPES = new Set(["TraditionalStrengthTraining", "FunctionalStrengthTraining", "CoreTraining"]);
 
-// Published wearable-population norms by age band, (max age, mean, sd): the
-// same tables the Aveil app uses for its "Top ~X% recovery" line. Apple Watch
-// HRV is SDNN, so it is only ever compared with SDNN norms.
+// Wearable-population norms by age band, (max age, mean, sd): the tables the
+// Aveil app uses for its "Top ~X% recovery" line. Apple Watch HRV is SDNN, so
+// it is only ever compared with SDNN norms.
 const HRV_SDNN_NORMS = [[29, 68, 24], [39, 56, 21], [49, 47, 18], [59, 41, 16], [200, 36, 15]];
 const RESTING_HR_NORMS = [[29, 66, 9], [39, 67, 9], [49, 68, 9], [59, 68, 9], [200, 68, 9]];
 const RESTING_HR_FEMALE_OFFSET = 3;
@@ -107,7 +107,7 @@ export function buildPeriodSummary(data, options = {}) {
     coverage: {
       sleep: current.sleep.nights,
       recovery: current.recovery.days,
-      activity: current.activity.days,
+      activity: current.activity.coverageDays,
       nutrition: current.nutrition.days,
       days,
     },
@@ -151,7 +151,7 @@ function periodStats({ windowDays, nights, hrv, restingHR, steps, activeEnergy, 
   const inWindow = new Set(windowDays);
   const periodNights = windowDays.map((day) => nights.get(day)).filter(Boolean);
   const staged = periodNights.filter((night) => night.hasStages);
-  const bedtimes = periodNights.map((night) => night.bedtimeMinutes);
+  const bedtimes = circularStats(periodNights.map((night) => night.bedtimeMinutes % 1440));
 
   const pick = (map) => windowDays.filter((day) => map.has(day)).map((day) => ({ day, value: map.get(day) }));
   const hrvDays = pick(hrv);
@@ -163,6 +163,7 @@ function periodStats({ windowDays, nights, hrv, restingHR, steps, activeEnergy, 
   const calorieDays = pick(calories).filter((entry) => entry.value > 0);
   const nutritionDays = new Set([...proteinDays, ...calorieDays].map((entry) => entry.day));
   const periodWorkouts = workouts.filter((workout) => inWindow.has(workout.day));
+  const activityDays = new Set([...stepDays.map((entry) => entry.day), ...periodWorkouts.map((workout) => workout.day)]);
   const weeks = windowDays.length / 7;
 
   return {
@@ -174,8 +175,8 @@ function periodStats({ windowDays, nights, hrv, restingHR, steps, activeEnergy, 
       deepMinutes: mean(staged.map((night) => night.deepMinutes)),
       remMinutes: mean(staged.map((night) => night.remMinutes)),
       coreMinutes: mean(staged.map((night) => night.coreMinutes)),
-      bedtimeMinutes: mean(bedtimes),
-      bedtimeSpreadMinutes: bedtimes.length >= 5 ? stddev(bedtimes) : null,
+      bedtimeMinutes: bedtimes?.mean ?? null,
+      bedtimeSpreadMinutes: periodNights.length >= 5 ? bedtimes.spread : null,
       longestNight: maxBy(periodNights, (night) => night.asleepMinutes),
       deepestNight: maxBy(staged, (night) => night.deepMinutes),
       bestStreak: longestStreak(windowDays, (day) => (nights.get(day)?.asleepMinutes ?? 0) >= MARKS.sleepMinutes),
@@ -191,6 +192,7 @@ function periodStats({ windowDays, nights, hrv, restingHR, steps, activeEnergy, 
     },
     activity: {
       days: stepDays.length,
+      coverageDays: activityDays.size,
       steps: mean(stepDays.map((entry) => entry.value)),
       totalSteps: sum(stepDays.map((entry) => entry.value)),
       bestStepDay: maxBy(stepDays, (entry) => entry.value),
@@ -382,7 +384,7 @@ function buildFacts(current) {
  */
 function pickStandout(summary) {
   const { current, changes } = summary;
-  const bestCoverage = Math.max(current.sleep.nights, current.recovery.hrvDays, current.recovery.restingDays, current.activity.days, current.nutrition.days);
+  const bestCoverage = Math.max(current.sleep.nights, current.recovery.days, current.activity.coverageDays, current.nutrition.days);
   if (bestCoverage < 7) {
     return { archetype: "warming_up", dimension: null, strengths: [] };
   }
@@ -433,7 +435,7 @@ function personFrom(profile = {}, onDay) {
 
 /**
  * "Top ~X% recovery among people your age": the person's own average from at
- * least 10 days, placed on a published age-based norm and rounded to a coarse
+ * least 10 days, placed on an age-based norm and rounded to a coarse
  * band (top 5, 10, or 25%). HRV first, then resting heart rate. Nothing when
  * the age is unknown or the average is not in the top quarter.
  */
@@ -595,7 +597,9 @@ function summarizeSession(session) {
     remMinutes: rem,
     coreMinutes: core + unspecified,
     awakeMinutes: awake,
-    hasStages: deep + rem > 0,
+    // A watch that records stages writes Core, Deep, or REM; "asleep" with no
+    // stage means the device does not stage sleep.
+    hasStages: deep + rem + core > 0,
     // Minutes after the previous midnight, so 00:30 reads as 24:30.
     bedtimeMinutes: startMinutes < 12 * 60 ? startMinutes + 24 * 60 : startMinutes,
   };
@@ -669,13 +673,34 @@ function dailyValues(records, mode, rank, dedupeExact = false) {
  */
 function dailyTotals(records) {
   const byDay = new Map();
+  const add = (day, piece) => {
+    if (!byDay.has(day)) byDay.set(day, []);
+    byDay.get(day).push(piece);
+  };
   for (const record of records) {
     const start = parseStamp(record.start);
     const end = parseStamp(record.end) || start;
     const value = Number(record.value);
     if (!start || !Number.isFinite(value) || value < 0) continue;
-    if (!byDay.has(start.day)) byDay.set(start.day, []);
-    byDay.get(start.day).push({ value, source: record.source || "", startMs: start.ms, endMs: Math.max(start.ms, end.ms) });
+    const source = record.source || "";
+    const endMs = Math.max(start.ms, end.ms);
+    const length = endMs - start.ms;
+    if (length === 0) {
+      add(start.day, { value, source, startMs: start.ms, endMs });
+      continue;
+    }
+    // A reading that runs past local midnight is split, so each day gets
+    // only its own minutes and its own share of the count.
+    let pieceStart = start.ms;
+    let day = start.day;
+    let midnight = start.ms + (86400 - start.seconds) * 1000;
+    for (let guard = 0; guard < 400 && pieceStart < endMs; guard += 1) {
+      const pieceEnd = Math.min(endMs, midnight);
+      add(day, { value: value * ((pieceEnd - pieceStart) / length), source, startMs: pieceStart, endMs: pieceEnd });
+      pieceStart = pieceEnd;
+      day = addDays(day, 1);
+      midnight += DAY_MS;
+    }
   }
 
   const result = new Map();
@@ -806,6 +831,7 @@ export function parseStamp(stamp) {
   return {
     day: `${year}-${month}-${day}`,
     minutes: Number(hour) * 60 + Number(minute),
+    seconds: Number(hour) * 3600 + Number(minute) * 60 + Number(second),
     ms: wallClock - offset * 60000,
   };
 }
@@ -835,6 +861,28 @@ function periodLabel(days) {
 
 // ─── Math ───
 
+/**
+ * Average and typical spread of clock times, measured around the clock face,
+ * so bedtimes on both sides of midnight or noon stay close together.
+ */
+function circularStats(minutes) {
+  if (!minutes.length) return null;
+  let sin = 0;
+  let cos = 0;
+  for (const value of minutes) {
+    const angle = (value / 1440) * 2 * Math.PI;
+    sin += Math.sin(angle);
+    cos += Math.cos(angle);
+  }
+  const center = ((Math.atan2(sin, cos) / (2 * Math.PI)) * 1440 + 1440) % 1440;
+  const deviations = minutes.map((value) => ((value - center + 2160) % 1440) - 720);
+  return {
+    // Minutes after the previous midnight, like each night's bedtime (00:30 reads as 24:30).
+    mean: center < 720 ? center + 1440 : center,
+    spread: Math.sqrt(deviations.reduce((total, deviation) => total + deviation * deviation, 0) / deviations.length),
+  };
+}
+
 function longestStreak(days, test) {
   let best = 0;
   let run = 0;
@@ -853,12 +901,6 @@ function mean(values) {
 
 function sum(values) {
   return values.reduce((total, value) => total + value, 0);
-}
-
-function stddev(values) {
-  const average = mean(values);
-  if (average == null) return null;
-  return Math.sqrt(mean(values.map((value) => (value - average) ** 2)));
 }
 
 function maxBy(items, score) {

@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 
 import { buildPeriodSummary, lastCompleteDay, parseStamp, directionFor } from "../src/summary.js";
 import { END, addDaily, addNight, daysBack, emptyData, steadyData } from "./helpers/data.js";
+import { addDays } from "./helpers/xml.js";
 
 test("reads the wall clock where the reading was taken", () => {
   const stamp = parseStamp("2026-10-24 23:30:00 -0500");
@@ -237,4 +238,60 @@ test("women's resting heart rate norm sits 3 bpm higher", () => {
 test("the recovery band needs at least 10 days of readings", () => {
   const summary = buildPeriodSummary(steadyData({ count: 9, restingHR: 50, dateOfBirth: "1992-03-14" }), { days: 30 });
   assert.equal(summary.recoveryBand, null);
+});
+
+test("a reading that crosses midnight is split between the two days", () => {
+  const data = emptyData();
+  for (const day of [...daysBack(10), addDays(END, 1)]) {
+    // 2,000 steps from 23:50 to 00:10: half belong to each day.
+    data.steps.push({ value: 2000, unit: "count", start: `${addDays(day, -1)} 23:50:00 -0500`, end: `${day} 00:10:00 -0500`, source: "Test Apple Watch" });
+    // The phone saw the same steps after midnight.
+    data.steps.push({ value: 900, unit: "count", start: `${day} 00:00:00 -0500`, end: `${day} 00:10:00 -0500`, source: "Test iPhone" });
+  }
+  const summary = buildPeriodSummary(data, { days: 7 });
+  assert.equal(Math.round(summary.current.activity.steps), 2000);
+  assert.equal(Math.round(summary.current.activity.totalSteps), 14000);
+});
+
+test("steps from the unfinished export day stay out of the window", () => {
+  const data = emptyData();
+  for (const day of daysBack(10)) addDaily(data, "steps", day, 6000, { hour: 10, minutes: 60 });
+  // 23:00 on the last full day to 01:00 on the export day.
+  data.steps.push({ value: 4000, unit: "count", start: `${END} 23:00:00 -0500`, end: `${addDays(END, 1)} 01:00:00 -0500`, source: "Test Apple Watch" });
+  const summary = buildPeriodSummary(data, { days: 7 });
+  assert.equal(Math.round(summary.current.activity.bestStepDay.value), 8000);
+});
+
+test("bedtimes either side of noon stay close for a day sleeper", () => {
+  const data = emptyData();
+  for (const [index, day] of daysBack(10).entries()) {
+    const start = index % 2 ? "11:55" : "12:05";
+    data.sleep.push({ value: "HKCategoryValueSleepAnalysisAsleepCore", start: `${day} ${start}:00 -0500`, end: `${day} 19:00:00 -0500`, source: "Test Apple Watch" });
+  }
+  const summary = buildPeriodSummary(data, { days: 7 });
+  assert.equal(Math.round(summary.current.sleep.bedtimeSpreadMinutes), 5);
+});
+
+test("bedtimes either side of midnight stay close too", () => {
+  const data = emptyData();
+  for (const [index, day] of daysBack(10).entries()) addNight(data, day, { bedMinutes: index % 2 ? 23 * 60 + 50 : 24 * 60 + 10 });
+  assert.equal(Math.round(buildPeriodSummary(data, { days: 7 }).current.sleep.bedtimeSpreadMinutes), 10);
+});
+
+test("nights with only Core sleep still count toward the stage averages", () => {
+  const data = emptyData();
+  for (const [index, day] of daysBack(10).entries()) addNight(data, day, { deep: index % 2 ? 60 : 0, rem: 0, core: 360 });
+  const summary = buildPeriodSummary(data, { days: 10 });
+  assert.equal(summary.current.sleep.stagedNights, 10);
+  assert.equal(Math.round(summary.current.sleep.deepMinutes), 30);
+});
+
+test("an export with workouts but no steps is not empty", () => {
+  const data = emptyData();
+  for (const [index, day] of daysBack(30).entries()) {
+    if (index % 2 === 0) data.workouts.push({ type: "Running", duration: 40, durationUnit: "min", start: `${day} 18:00:00 -0500`, end: `${day} 18:40:00 -0500`, source: "Test Apple Watch" });
+  }
+  const summary = buildPeriodSummary(data, { days: 30 });
+  assert.equal(summary.coverage.activity, 15);
+  assert.equal(summary.current.activity.workouts, 15);
 });
