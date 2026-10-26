@@ -1,14 +1,14 @@
 {
   "name": "aveil-health",
-  "version": "0.3.0",
-  "description": "Private, local Apple Health analysis — CLI + MCP server",
+  "version": "0.4.0",
+  "description": "Private, local Apple Health analysis: Wrapped card, health brief, CLI, and MCP server",
   "type": "module",
   "bin": {
     "aveil-health": "bin/cli.js"
   },
   "main": "./src/index.js",
   "scripts": {
-    "test": "node --test src/**/*.test.js"
+    "test": "node --test test/*.test.js"
   },
   "keywords": [
     "health",
@@ -36,6 +36,7 @@
     "LICENSE"
   ],
   "dependencies": {
-    "sax": "^1.4.1"
+    "sax": "^1.4.1",
+    "yauzl": "^3.4.0"
   }
 }

@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aveil Health Brief · Sleep and recovery</title>
+<link rel="preconnect" href="https://api.fontshare.com">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://api.fontshare.com/v2/css?f[]=switzer@400,500,600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0C0907;
+  --bg-2:#13100C;
+  --bg-3:#1A1610;
+  --ink:#F2ECE0;
+  --ink-2:#D4C8B1;
+  --ink-3:#A89981;
+  --muted:#6F6554;
+  --rule:rgba(242,236,224,0.08);
+  --rule-2:rgba(242,236,224,0.14);
+  --amber:#D97A2B;
+  --amber-dim:#8B4D1C;
+  --gold:#E8B45A;
+  --sans:"Switzer",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--paper:#F7F3EB;--paper-ink:#0C0907;--paper-muted:#3D342A;--paper-rule:rgba(12,9,7,0.12);--paper-soft:rgba(12,9,7,0.07)}
+body{background:#EDE6D9;color:var(--paper-ink);font-family:var(--sans);-webkit-font-smoothing:antialiased;font-feature-settings:"tnum" 1;padding:36px 16px}
+.sheet{max-width:720px;margin:0 auto;background:var(--paper);border:1px solid var(--paper-rule);border-radius:6px;padding:36px 40px 30px}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--amber)}
+h1{font-weight:500;font-size:27px;line-height:1.18;letter-spacing:-.01em;margin-top:10px}
+.subline{font-size:14px;line-height:1.5;color:var(--paper-muted);margin-top:10px}
+.meta{font-size:13px;color:var(--paper-muted);margin-top:8px}
+.coverage{font-weight:500;font-size:14px;margin-top:6px;display:flex;flex-wrap:wrap;gap:4px 0}
+.coverage span + span::before{content:"·";color:var(--paper-muted);margin:0 8px}
+.callout{margin-top:22px;padding:14px 16px;border:1px solid rgba(217,122,43,0.4);background:rgba(217,122,43,0.06);border-radius:4px}
+.callout-label{font-family:var(--mono);font-weight:500;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--amber)}
+.callout-text{font-weight:600;font-size:17px;line-height:1.35;margin-top:6px}
+.section{font-family:var(--mono);font-weight:500;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--amber);margin:28px 0 10px}
+.pattern{font-weight:500;font-size:16px;line-height:1.45}
+.pattern + .pattern{margin-top:10px}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+th{font-family:var(--mono);font-weight:500;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--paper-muted);text-align:left;padding:0 0 8px;border-bottom:1px solid var(--paper-rule)}
+td{font-size:14px;padding:9px 0;border-bottom:1px solid var(--paper-soft)}
+tr:last-child td{border-bottom:none}
+th:nth-child(1),td:nth-child(1){width:40%}
+th:nth-child(2),td:nth-child(2),th:nth-child(3),td:nth-child(3){width:24%}
+th:nth-child(4),td:nth-child(4){width:12%;text-align:center}
+td.metric{font-weight:500}
+td.trend{font-size:15px;color:var(--paper-muted)}
+.note{font-size:12px;color:var(--paper-muted);margin-top:8px}
+ul{list-style:none}
+li{font-size:15px;line-height:1.45;display:flex;gap:10px}
+li + li{margin-top:6px}
+li::before{content:"";width:5px;height:5px;border-radius:50%;background:var(--paper-ink);flex-shrink:0;margin-top:9px}
+.disclaimer{font-size:12px;line-height:1.5;color:var(--paper-muted);margin-top:26px;padding-top:14px;border-top:1px solid var(--paper-rule)}
+.footer{font-family:var(--mono);font-size:11px;color:var(--paper-muted);text-align:center;margin-top:16px}
+.empty{font-size:16px;line-height:1.5;margin-top:14px}
+@media (max-width:640px){body{padding:12px 8px}.sheet{padding:24px 18px}h1{font-size:23px}}
+@media print{body{background:#fff;padding:0}.sheet{border:none;max-width:none;padding:0}.footer{display:none}.callout,tr{break-inside:avoid}}
+</style>
+</head>
+<body>
+<article class="sheet">
+<div class="eyebrow">Aveil Health Brief · Sleep and recovery</div>
+  <h1>Sleep is the clearest place to look this month.</h1>
+  <p class="subline">Built from your Apple Health export across sleep and recovery over the last 30 days.</p>
+  <p class="meta">Last 30 days · Sep 24 – Oct 23, 2026</p>
+  <p class="coverage"><span>Sleep 30/30</span><span>Recovery 30/30</span></p>
+  <div class="callout"><div class="callout-label">The question worth asking</div><div class="callout-text">Which input is shaping your sleep the most?</div></div>
+  <div class="section">Strongest patterns</div><p class="pattern">Your sleep averaged 7h 28m a night, inside the 7 to 9 hour range.</p><p class="pattern">Your deep sleep averaged a strong 81 minutes a night, clearing the 60-minute recovery mark.</p><p class="pattern">Your recovery (HRV) averaged a strong 62 ms this month.</p>
+  <div class="section">Evidence</div>
+  <table>
+    <thead><tr><th>Metric</th><th>Latest</th><th>Baseline</th><th>Trend</th></tr></thead>
+    <tbody>
+      <tr><td class="metric">Sleep duration</td><td>7h 36m</td><td>7h 28m</td><td class="trend">→</td></tr>
+      <tr><td class="metric">Deep sleep</td><td>1h 23m</td><td>1h 21m</td><td class="trend">↑</td></tr>
+      <tr><td class="metric">REM sleep</td><td>1h 40m</td><td>1h 41m</td><td class="trend">→</td></tr>
+      <tr><td class="metric">Recovery (HRV)</td><td>64 ms</td><td>62 ms</td><td class="trend">↑</td></tr>
+      <tr><td class="metric">Resting heart rate</td><td>56 bpm</td><td>55 bpm</td><td class="trend">→</td></tr>
+    </tbody>
+  </table>
+  <p class="note">Latest is the last 7 days. Baseline is the average for the last 30 days.</p>
+  <div class="section">Worth bringing up</div>
+  <ul><li>A heavy last meal eaten close to bedtime.</li><li>Caffeine timing and how late in the day it lands.</li><li>Screen time and light exposure before bed.</li><li>Bedtime and wake time on work days versus off days.</li><li>Recent stress, workload, or anything weighing on you.</li></ul>
+  <div class="callout"><div class="callout-label">What to test next</div><div class="callout-text">Keep the same bedtime every day this month and see how your sleep responds.</div></div>
+  
+  <p class="disclaimer">This is a summary of self-tracked data, not a diagnosis. It is meant to help a conversation, not replace one.</p>
+</article>
+<p class="footer">Made with aveil-health, which reads your Apple Health export on your own computer. Nothing was uploaded.</p>
+</body>
+</html>
