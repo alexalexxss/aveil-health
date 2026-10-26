@@ -16,6 +16,7 @@ import {
   WRAPPED,
   fill,
 } from "./copy.js";
+import { tierFor } from "./summary.js";
 import {
   FONT_LINKS,
   GLYPHS,
@@ -213,7 +214,7 @@ function levelRows(summary) {
   if (current.recovery.restingDays >= 3) {
     rows.push({ icon: "heart", title: LEVEL_LABELS.recovery_rhr, value: formatUnit(current.recovery.restingHR, "bpm"), level: bucket(scores.parts.recovery), delta: improvedDelta("restingHR") });
   } else if (current.recovery.hrvDays >= 3) {
-    rows.push({ icon: "pulse", title: LEVEL_LABELS.recovery_hrv, value: formatUnit(current.recovery.hrv, "ms"), level: tierLevel(summary.highlights.find((item) => item.key === "avg_hrv")?.tier), delta: improvedDelta("hrv") });
+    rows.push({ icon: "pulse", title: LEVEL_LABELS.recovery_hrv, value: formatUnit(current.recovery.hrv, "ms"), level: tierLevel(tierFor("hrv", current.recovery.hrv)), delta: improvedDelta("hrv") });
   }
   if (current.activity.days >= 3) {
     rows.push({ icon: "walk", title: LEVEL_LABELS.activity, value: `${formatCount(current.activity.steps)}/day`, level: bucket(scores.parts.activity), delta: improvedDelta("steps") });

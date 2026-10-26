@@ -488,7 +488,8 @@ function erfc(x) {
 
 // ─── Tiers ───
 
-function tierFor(metric, value) {
+/** The achievement tag (fair, strong, elite, or null) for one measure. */
+export function tierFor(metric, value) {
   const bands = TIER_BANDS[metric];
   if (!bands || value == null || !Number.isFinite(value)) return null;
   const [fair, strong, elite] = bands;

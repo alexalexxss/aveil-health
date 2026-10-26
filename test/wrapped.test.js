@@ -6,7 +6,7 @@ import { buildPeriodSummary } from "../src/summary.js";
 import { buildSampleExportXml } from "../src/sample-data.js";
 import { buildWrappedModel, generateWrappedHTML } from "../src/wrapped.js";
 import { ARCHETYPES } from "../src/copy.js";
-import { addDaily, daysBack, emptyData, steadyData } from "./helpers/data.js";
+import { addDaily, addNight, daysBack, emptyData, steadyData } from "./helpers/data.js";
 
 async function sampleSummary(profile, days = 30) {
   const xml = buildSampleExportXml({ profile, days: days * 2 + 10 });
@@ -126,4 +126,17 @@ test("level scales wait for 5 days of data instead of showing the lowest level",
   }
   const html = generateWrappedHTML(buildPeriodSummary(steadyData({ count: 4, sleepMinutes: 480, steps: 10000, restingHR: 50 }), { days: 7 })).html;
   assert.doesNotMatch(html, /class="scale"/);
+});
+
+test("the HRV level does not depend on which facts fit on the card", () => {
+  // Sleep, steps, and HRV only: the HRV fact is trimmed from the two-column grid.
+  const data = emptyData();
+  for (const day of daysBack(60)) {
+    addNight(data, day, { deep: 60, rem: 80, core: 220 });
+    addDaily(data, "steps", day, 6000);
+    addDaily(data, "hrv", day, 60, { hour: 3, unit: "ms" });
+  }
+  const model = buildWrappedModel(buildPeriodSummary(data, { days: 30 }));
+  assert.ok(!model.cells.some((cell) => cell.label === "Recovery (HRV) average"));
+  assert.equal(model.levels.find((row) => row.title === "Recovery (HRV)").level, 3);
 });
